@@ -42,27 +42,20 @@ class BiharEducationNotifier:
 /start - Show this help message
 /help - Get support information  
 /stats - View bot statistics
+/about - About this bot
 /features - See all features
-/website - Get website links
 /privacy - Privacy policy
 
 📊 *Information Commands:*
-/updates - Latest updates list
 /websites - Supported websites list
 /categories - Available categories
-/tutorial - How to use guide
-
-🔔 *Subscription Commands:*
-/subscribe - Get update notifications
-/unsubscribe - Stop notifications
-/notifications - Notification settings
+/technology - Tech stack info
+/team - Development team
 
 👨‍💻 *Admin Commands:* (Admin only)
 /check - Manual update check
+/status - System status
 /maintenance - Maintenance notice
-/broadcast - Broadcast message
-/restart - Restart bot system
-/logs - View system logs
 
 *Type any command to get started!* 🚀
             """
@@ -76,28 +69,54 @@ class BiharEducationNotifier:
 📞 *Support Channels:*
 • Email: support@bihareducation.com
 • Phone: +91-XXXXX-XXXXX
-• Website: https://bihareducation.com/help
 • Telegram: @BiharEducationSupport
 
 🛠️ *Quick Solutions:*
 • Bot not responding - Try /restart
 • No updates - Check /status
-• Notification issues - /notifications
-• Website problems - /report website_name
-
-📋 *Support Tickets:*
-Create ticket: /ticket [issue]
-Check ticket: /mytickets
-Emergency: /emergency
+• Notification issues - Check channel
+• Website problems - Report using /report
 
 ⏰ *Response Time:*
 • Normal: 24-48 hours
 • Urgent: 6-12 hours
 • Emergency: 1-2 hours
 
-*We're here to help you 24/7!* 🤝
+*We're here to help you!* 🤝
             """
             self.bot.send_message(message.chat.id, help_text, parse_mode='Markdown')
+
+        @self.bot.message_handler(commands=['about'])
+        def about_bot(message):
+            about_text = """
+🎓 *About Bihar Education Bot* 🎓
+
+🤖 *Bot Overview:*
+Automated system providing real-time updates from Bihar education institutions. Monitoring 25+ websites for latest information.
+
+🚀 *Mission:*
+Make education information accessible to every student in Bihar through automation and technology.
+
+📊 *Stats & Achievements:*
+• 25+ Websites Monitored
+• 1000+ Daily Updates
+• 99.9% Uptime
+• 30-minute Refresh Rate
+
+🛠️ *Technology Stack:*
+• Python 3.11 + Telegram Bot API
+• BeautifulSoup4 + SQLite
+• Render Hosting + GitHub
+
+👥 *Developer:*
+• Suman Kumar Soren
+• B.Tech Computer Science
+• 3+ Years Experience
+• Bihar, India
+
+*Building the future of education information!* 🚀
+            """
+            self.bot.send_message(message.chat.id, about_text, parse_mode='Markdown')
 
         @self.bot.message_handler(commands=['privacy'])
         def privacy_policy(message):
@@ -114,67 +133,45 @@ Emergency: /emergency
 - Personal documents
 - Location data
 - Payment information
-- Contact lists
 
 🛡️ *Your Rights:*
-- Access your data (/mydata)
-- Request deletion (/delete)
+- Access your data
+- Request deletion
 - Opt-out of data collection
 - Transparency about usage
 
-🔐 *Security Measures:*
-- End-to-end encryption
-- Regular security audits
-- Data minimization
-- 30-day automatic deletion
-
 📞 *Contact Privacy Team:*
 • Email: privacy@bihareducation.com
-• Telegram: @BiharEducationSupport
-• Website: https://bihareducation.com/privacy
-
-⏰ *Response Time:* 48 hours
+• Response Time: 48 hours
 
 *Your privacy is our priority!* 🔐
-
-🌐 *Full Policy:* https://bihareducation.com/privacy
             """
             self.bot.send_message(message.chat.id, privacy_text, parse_mode='Markdown')
 
         @self.bot.message_handler(commands=['features'])
         def features(message):
             features_text = """
-🚀 *Advanced Features Overview* 🚀
+🚀 *Advanced Features* 🚀
 
 📡 *Real-time Updates:*
 • Automatic scraping every 30 minutes
 • 25+ Bihar education websites
 • Instant channel notifications
-• Duplicate detection system
 
 🎯 *Smart Filtering:*
-• Category-wise updates (Exams, Jobs, Results)
+• Category-wise updates
 • Priority-based posting
-• Quality content filtering
 • Automatic error recovery
 
 🔔 *Notification System:*
 • Custom notification preferences
-• Silent mode options
 • Scheduled summaries
 • Emergency alerts
 
 📊 *Analytics & Reports:*
 • Daily performance reports
 • Website status monitoring
-• User engagement analytics
 • Error rate tracking
-
-⚙️ *Admin Features:*
-• Remote management
-• Bulk operations
-• System diagnostics
-• Automated backups
 
 *Experience the power of automation!* 💪
             """
@@ -189,27 +186,23 @@ Emergency: /emergency
 🎓 *Education Boards:*
 • Bihar School Examination Board (BSEB)
 • Bihar Board of Open Schooling
-• Bihar Sanskrit Shiksha Board  
-• Bihar Madarsa Education Board
+• Bihar Sanskrit Shiksha Board
 
 🏫 *Universities:*
 • Patna University
 • Magadh University
 • Aryabhatta Knowledge University
 • Nalanda Open University
-• 15+ Other Universities
 
 💼 *Job Portals:*
 • Free Job Alert
 • Career Power Blog
 • BPSC Updates
-• BSSC Notifications
 
 📊 *Results & Exams:*
 • BSEB Results Portal
 • Intermediate Results
 • Matric Results
-• Entrance Exams
 
 *Total: 25+ Websites Monitored* 📈
             """
@@ -236,23 +229,85 @@ Emergency: /emergency
 - Government Jobs
 - Teacher Recruitment
 - Bank Vacancies
-- SSC Notifications
 
 💰 *Scholarship:*
 - State Scholarships
 - National Schemes
-- Merit-based Awards
 - Application Deadlines
-
-📚 *Education News:*
-- Policy Updates
-- New Initiatives
-- Educational Events
-- Development Programs
 
 *Filter content by your interests!* 🔍
             """
             self.bot.send_message(message.chat.id, categories_text, parse_mode='Markdown')
+
+        @self.bot.message_handler(commands=['technology'])
+        def tech_stack(message):
+            tech_text = """
+🛠️ *Technology Stack* 🛠️
+
+💻 *Programming Language:*
+• Python 3.11
+• Modern syntax
+• High performance
+
+🤖 *Bot Framework:*
+• pyTelegramBotAPI
+• Async support
+• Media handling
+
+🌐 *Web Scraping:*
+• BeautifulSoup4
+• Requests library
+• Custom selectors
+
+🗄️ *Database:*
+• SQLite3
+• Lightweight
+• Reliable
+
+☁️ *Hosting:*
+• Render.com
+• 24/7 Uptime
+• Auto-scaling
+
+📦 *Version Control:*
+• GitHub
+• CI/CD pipelines
+• Automated testing
+
+*Built with cutting-edge technology!* 🔥
+            """
+            self.bot.send_message(message.chat.id, tech_text, parse_mode='Markdown')
+
+        @self.bot.message_handler(commands=['team'])
+        def team_info(message):
+            team_text = """
+👥 *Development Team* 👥
+
+🦸‍♂️ *Lead Developer:*
+• *Name:* Suman Kumar Soren
+• *Role:* Full Stack Developer
+• *Expertise:* Python, APIs, Automation
+• *Education:* B.Tech Computer Science
+• *Experience:* 3+ Years
+• *Location:* Bihar, India
+
+🌐 *Projects Portfolio:*
+• 10+ Telegram Bots
+• 5+ Web Applications
+• Education Technology Focus
+
+🏆 *Achievements:*
+• 1000+ Active Users
+• 99.9% Uptime Maintenance
+• Zero Data Breaches
+
+📞 *Contact Developer:*
+• Email: suman@bihareducation.com
+• Telegram: @sumankumarsoren
+
+*Dedicated to educational excellence!* 📚
+            """
+            self.bot.send_message(message.chat.id, team_text, parse_mode='Markdown')
 
         # ==================== ADMIN COMMANDS ====================
         @self.bot.message_handler(commands=['check'])
@@ -299,7 +354,6 @@ Emergency: /emergency
 • Last Update: 5 min ago
 • Posts Today: 42
 • Users Served: 156
-• API Calls: 1,234
 
 ⚡ *System Health:* EXCELLENT
 🎯 *Recommendations:* No issues detected
