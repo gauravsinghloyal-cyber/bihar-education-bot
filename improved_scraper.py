@@ -6,6 +6,7 @@ from datetime import datetime
 import logging
 import re
 import urllib3
+from urllib.parse import urljoin
 
 # Disable SSL warnings
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -31,7 +32,9 @@ class BiharEducationScraper:
             'nou.ac.in',
             'purneauniversity.ac.in',
             'mungeruniversity.ac.in',
-            'results.biharboardonline.com'
+            'results.biharboardonline.com',
+            'freejobalert.com',
+            'careerpower.in'
         ]
         
         # List of problematic websites to skip
@@ -82,6 +85,8 @@ class BiharEducationScraper:
                 return []
                 
             logger.info(f"Scraping {website['name']}...")
+            
+            # Special handling for Bihar government websites
             response = self.session.get(website['url'], timeout=30, verify=False)
             response.raise_for_status()
             
@@ -103,8 +108,8 @@ class BiharEducationScraper:
             return updates
             
         except requests.exceptions.SSLError:
-            logger.warning(f"SSL error for {website['name']} - skipping")
-            return []
+            logger.warning(f"SSL error for {website['name']} - trying alternative approach")
+            return self.fallback_scrape(website)
         except requests.exceptions.ConnectionError:
             logger.warning(f"Connection error for {website['name']} - skipping")
             return []
@@ -119,9 +124,41 @@ class BiharEducationScraper:
             logger.error(f"Error scraping {website['name']}: {e}")
             return []
 
+    def fallback_scrape(self, website):
+        """Alternative scraping method for SSL issues"""
+        try:
+            # Try without session for SSL issues
+            response = requests.get(website['url'], timeout=30, verify=False)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            updates = []
+            
+            # Common selectors for fallback
+            common_selectors = [
+                'a[href*="news"]', 'a[href*="notice"]', 'a[href*="update"]',
+                'a[href*="alert"]', '.content', 'marquee', 'table tr'
+            ]
+            
+            for selector in common_selectors:
+                try:
+                    items = soup.select(selector)
+                    if items:
+                        updates.extend(self.extract_updates(items, website))
+                        if updates:
+                            break
+                except:
+                    continue
+            
+            return updates
+            
+        except Exception as e:
+            logger.warning(f"Fallback also failed for {website['name']}: {e}")
+            return []
+
     def extract_updates(self, items, website):
         updates = []
-        for item in items[:5]:  # Limit to 5 items per website
+        for item in items[:5]:
             try:
                 text = item.get_text(strip=True)
                 if not text or len(text) < 20:
@@ -166,7 +203,6 @@ class BiharEducationScraper:
         if url.startswith('http'):
             return url
         elif url.startswith('/'):
-            from urllib.parse import urljoin
             return urljoin(base_url, url)
         else:
             return base_url + '/' + url.lstrip('/')
@@ -181,7 +217,7 @@ class BiharEducationScraper:
             try:
                 updates = self.scrape_website(website)
                 all_updates.extend(updates)
-                time.sleep(1)  # Reduced delay
+                time.sleep(1)
             except Exception as e:
                 logger.error(f"Failed to check {website['name']}: {e}")
                 continue
