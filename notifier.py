@@ -32,20 +32,53 @@ class BiharEducationNotifier:
             )
 
     def setup_handlers(self):
-        @self.bot.message_handler(commands=['start', 'help'])
+        @self.bot.message_handler(commands=['start'])
         def start(message):
-            if str(message.chat.id) in Config.ADMIN_IDS or message.from_user.username in Config.ADMIN_IDS:
-                self.send_admin_menu(message.chat.id)
-            else:
-                self.bot.send_message(
-                    message.chat.id,
-                    "🤖 *Bihar Education Updates Bot*\n\n"
-                    "This bot automatically posts updates from all Bihar education websites:\n"
-                    "• All University Admissions\n• Board Exam Updates\n"
-                    "• Recruitment Notifications\n• Results & Forms\n• Scholarship Info\n\n"
-                    "Join our channel for automatic updates: @BiharEducationIN",
-                    parse_mode='Markdown'
-                )
+            welcome_text = """
+🎓 *Welcome to Bihar Education Bot!* 🎓
+
+I automatically provide updates from:
+• Bihar Board Exams & Results
+• University Admissions
+• Government Job Notifications  
+• Scholarship Programs
+• Education News
+
+📢 *Features:*
+✅ Automatic updates every 30 minutes
+✅ 25+ Bihar education websites covered
+✅ Real-time notifications
+✅ Exam forms & results
+
+🔧 *Commands:*
+/start - Show this message
+/stats - Bot statistics  
+/help - Support information
+
+*Stay updated with Bihar education!* 📚
+            """
+            self.bot.send_message(message.chat.id, welcome_text, parse_mode='Markdown')
+
+        @self.bot.message_handler(commands=['help'])
+        def help_command(message):
+            help_text = """
+🆘 *Help & Support*
+
+📞 *Contact For:*
+• Technical Issues
+• Website Suggestions
+• Feature Requests
+• Partnership Opportunities
+
+📧 *Email:* contact@bihareducation.com
+📞 *Phone:* +91-XXXXX-XXXXX
+🌐 *Website:* https://bihareducation.com
+
+⏰ *Response Time:* 24-48 hours
+
+*We're here to help you!* 🤝
+            """
+            self.bot.send_message(message.chat.id, help_text, parse_mode='Markdown')
 
         @self.bot.message_handler(commands=['stats'])
         def stats(message):
@@ -59,6 +92,29 @@ class BiharEducationNotifier:
                 self.bot.send_message(message.chat.id, "🔄 Manual check started...")
                 new_posts = self.check_and_post_updates()
                 self.bot.send_message(message.chat.id, f"✅ Check completed! Posted {new_posts} new updates.")
+
+        @self.bot.message_handler(commands=['maintenance'])
+        def maintenance(message):
+            if str(message.chat.id) in Config.ADMIN_IDS or message.from_user.username in Config.ADMIN_IDS:
+                maintenance_text = """
+🔧 *Maintenance Notice*
+
+⚠️ *Temporary Service Interruption*
+📅 Date: To be announced
+⏰ Time: To be announced
+
+🔄 *Reason:* Scheduled maintenance and upgrades
+
+✅ *Services Affected:*
+• Automatic scraping
+• New updates posting
+• Bot commands
+
+⏳ *Expected Downtime:* 1-2 hours
+
+*We'll be back soon with better features!* 🚀
+                """
+                self.bot.send_message(Config.CHANNEL_ID, maintenance_text, parse_mode='Markdown')
 
     def get_stats(self):
         conn = self.db.get_connection()

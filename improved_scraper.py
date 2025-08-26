@@ -121,7 +121,19 @@ class BiharEducationScraper:
                 logger.warning(f"403 Forbidden for {website['name']} - skipping")
             return []
         except Exception as e:
-            logger.error(f"Error scraping {website['name']}: {e}")
+            error_msg = f"""
+❌ *Temporary Issue Detected*
+
+⚠️ *Problem:* Website scraping failed
+🔧 *Status:* Automatic retry in 30 minutes
+⏰ *ETA:* Next scheduled check
+
+📋 *Affected Website:* {website['name']}
+🔄 *Workaround:* Manual check later
+
+*Sorry for the inconvenience!* 🙏
+            """
+            logger.error(error_msg)
             return []
 
     def fallback_scrape(self, website):
