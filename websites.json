@@ -1,0 +1,142 @@
+{
+  "websites": [
+    {
+      "name": "Bihar School Examination Board (BSEB)",
+      "url": "https://biharboardonline.bihar.gov.in/",
+      "category": "Board",
+      "selector": ".news-list li, .notice-list div, .marquee, .alert, .notification"
+    },
+    {
+      "name": "Bihar Board of Open Schooling and Examination",
+      "url": "http://www.bbose.org/",
+      "category": "Board",
+      "selector": ".news, .notice, .update, .marquee, tr:has(td)"
+    },
+    {
+      "name": "Bihar Sanskrit Shiksha Board",
+      "url": "http://bssbpatna.in/",
+      "category": "Board",
+      "selector": ".news-item, .notice-item, .update-item, table tr"
+    },
+    {
+      "name": "Bihar State Madarsa Education Board",
+      "url": "http://www.bsmeb.org/",
+      "category": "Board",
+      "selector": ".news, .notice, .update, .marquee"
+    },
+    {
+      "name": "Bihar State Education Department",
+      "url": "http://education.bih.nic.in/",
+      "category": "Govt Portal",
+      "selector": ".content, .news, .update, .notification, table tr"
+    },
+    {
+      "name": "Bihar Board Online (Alternate Portal)",
+      "url": "https://biharboardonline.com/",
+      "category": "Board",
+      "selector": ".news-list, .notice-list, .update-list, .alert"
+    },
+    {
+      "name": "Bihar Agricultural University",
+      "url": "https://bausabour.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update"
+    },
+    {
+      "name": "Aryabhatta Knowledge University",
+      "url": "http://akubihar.ac.in/",
+      "category": "University",
+      "selector": ".news-scroll, .notice-board, .announcement, .update"
+    },
+    {
+      "name": "Magadh University",
+      "url": "http://www.magadhuniversity.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .scroll"
+    },
+    {
+      "name": "Lalit Narayan Mithila University",
+      "url": "http://lnmu.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, marquee"
+    },
+    {
+      "name": "Patliputra University",
+      "url": "http://www.ppup.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .notification"
+    },
+    {
+      "name": "Jai Prakash University",
+      "url": "http://jpv.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .alert"
+    },
+    {
+      "name": "Tilka Manjhi Bhagalpur University",
+      "url": "http://tmbuniv.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .scroll"
+    },
+    {
+      "name": "Veer Kunwar Singh University",
+      "url": "http://vksu.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, marquee"
+    },
+    {
+      "name": "Bhupendra Narayan Mandal University",
+      "url": "http://bnmu.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .notification"
+    },
+    {
+      "name": "Kameshwar Singh Darbhanga Sanskrit University",
+      "url": "http://ksdsu.edu.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .alert"
+    },
+    {
+      "name": "Maulana Mazharul Haque Arabic & Persian University",
+      "url": "http://www.mmhapu.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .scroll"
+    },
+    {
+      "name": "Nalanda Open University",
+      "url": "http://www.nalandaopenuniversity.com/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, marquee"
+    },
+    {
+      "name": "Chanakya National Law University",
+      "url": "http://www.cnlu.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .notification"
+    },
+    {
+      "name": "Bihar Animal Sciences University",
+      "url": "https://www.basu.org.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .alert"
+    },
+    {
+      "name": "Bihar Engineering University",
+      "url": "https://beu-bihar.org/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .scroll"
+    },
+    {
+      "name": "Purnea University",
+      "url": "https://www.purneauniversity.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, marquee"
+    },
+    {
+      "name": "Munger University",
+      "url": "https://www.mungeruniversity.ac.in/",
+      "category": "University",
+      "selector": ".news, .notice, .announcement, .update, .notification"
+    }
+  ]
+}
