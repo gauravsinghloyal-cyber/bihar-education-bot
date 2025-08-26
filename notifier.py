@@ -57,6 +57,8 @@ class BiharEducationNotifier:
 /status - System status
 /maintenance - Maintenance notice
 
+💡 *Pro Tip:* Type `@BiharEducationBot` in any chat to access quick updates!
+
 *Type any command to get started!* 🚀
             """
             self.bot.send_message(message.chat.id, welcome_text, parse_mode='Markdown')
@@ -76,6 +78,13 @@ class BiharEducationNotifier:
 • No updates - Check /status
 • Notification issues - Check channel
 • Website problems - Report using /report
+
+💡 *Inline Usage:* Type `@BiharEducationBot` followed by:
+• `latest` - Recent updates
+• `results` - Exam results
+• `jobs` - Government vacancies
+• `admissions` - Open admissions
+• `scholarships` - Available funds
 
 ⏰ *Response Time:*
 • Normal: 24-48 hours
@@ -113,6 +122,10 @@ Make education information accessible to every student in Bihar through automati
 • B.Tech Computer Science
 • 3+ Years Experience
 • Bihar, India
+
+💡 *Inline Features:* Type `@BiharEducationBot` in any chat for quick access to:
+• Latest updates • Exam results • Job notifications
+• Admission info • Scholarships • Contact details
 
 *Building the future of education information!* 🚀
             """
@@ -172,6 +185,12 @@ Make education information accessible to every student in Bihar through automati
 • Daily performance reports
 • Website status monitoring
 • Error rate tracking
+
+💡 *Inline Query Support:*
+Type `@BiharEducationBot` in any chat for:
+• Quick updates access
+• Instant information sharing
+• Easy content discovery
 
 *Experience the power of automation!* 💪
             """
@@ -253,6 +272,7 @@ Make education information accessible to every student in Bihar through automati
 • pyTelegramBotAPI
 • Async support
 • Media handling
+• *Inline query support*
 
 🌐 *Web Scraping:*
 • BeautifulSoup4
@@ -300,6 +320,7 @@ Make education information accessible to every student in Bihar through automati
 • 1000+ Active Users
 • 99.9% Uptime Maintenance
 • Zero Data Breaches
+• *Inline Query Implementation*
 
 📞 *Contact Developer:*
 • Email: suman@bihareducation.com
@@ -343,6 +364,7 @@ Make education information accessible to every student in Bihar through automati
 🌐 *Web Server:* RUNNING
 📡 *Scraper:* ACTIVE
 💾 *Database:* CONNECTED
+💡 *Inline Mode:* ENABLED
 
 📊 *Performance Metrics:*
 • Uptime: 99.9%
@@ -354,6 +376,7 @@ Make education information accessible to every student in Bihar through automati
 • Last Update: 5 min ago
 • Posts Today: 42
 • Users Served: 156
+• Inline Queries: Active
 
 ⚡ *System Health:* EXCELLENT
 🎯 *Recommendations:* No issues detected
@@ -375,6 +398,187 @@ Make education information accessible to every student in Bihar through automati
 *Thank you for your patience!* 🙏
                 """
                 self.bot.send_message(Config.CHANNEL_ID, maintenance_text, parse_mode='Markdown')
+
+        # ==================== INLINE QUERY HANDLER ====================
+        @self.bot.inline_handler(lambda query: True)
+        def handle_inline_query(inline_query):
+            try:
+                query = inline_query.query.lower()
+                results = []
+                
+                # Latest Updates
+                if not query or 'latest' in query or 'update' in query:
+                    results.append(
+                        types.InlineQueryResultArticle(
+                            id='1',
+                            title='📢 Latest Education Updates',
+                            description='Get recent updates from Bihar education websites',
+                            input_message_content=types.InputTextMessageContent(
+                                message_text="🎓 *Latest Education Updates*\n\n"
+                                            "Here are the recent updates from Bihar education sector:\n"
+                                            "• BSEB Intermediate Results declared\n"
+                                            "• Patna University Admission started\n"
+                                            "• BPSC Teacher Recruitment notification\n"
+                                            "• Scholarship applications open\n\n"
+                                            "🔔 *Stay updated with @BiharEducationIN*",
+                                parse_mode='Markdown'
+                            ),
+                            thumb_url='https://img.icons8.com/color/96/000000/education.png',
+                            reply_markup=types.InlineKeyboardMarkup().add(
+                                types.InlineKeyboardButton("Join Channel", url="https://t.me/BiharEducationIN")
+                            )
+                        )
+                    )
+                
+                # Exam Results
+                if not query or 'result' in query or 'exam' in query or 'pariksha' in query:
+                    results.append(
+                        types.InlineQueryResultArticle(
+                            id='2',
+                            title='📊 Exam Results',
+                            description='Check latest exam results and merit lists',
+                            input_message_content=types.InputTextMessageContent(
+                                message_text="📊 *Exam Results Available*\n\n"
+                                            "Latest results declared:\n"
+                                            "• BSEB Matric Results 2024\n"
+                                            "• Intermediate Science Results\n"
+                                            "• BPSC Prelims Results\n"
+                                            "• University Semester Results\n\n"
+                                            "📱 Check: @BiharEducationIN",
+                                parse_mode='Markdown'
+                            ),
+                            thumb_url='https://img.icons8.com/color/96/000000/exam.png',
+                            reply_markup=types.InlineKeyboardMarkup().add(
+                                types.InlineKeyboardButton("View Results", url="https://t.me/BiharEducationIN")
+                            )
+                        )
+                    )
+                
+                # Admissions
+                if not query or 'admission' in query or 'form' in query or 'admit' in query:
+                    results.append(
+                        types.InlineQueryResultArticle(
+                            id='3',
+                            title='🎫 Admissions Open',
+                            description='Current admission notifications and forms',
+                            input_message_content=types.InputTextMessageContent(
+                                message_text="🎫 *Admissions Open*\n\n"
+                                            "Ongoing admissions:\n"
+                                            "• Patna University PG Courses\n"
+                                            "• Engineering College Admissions\n"
+                                            "• Medical Entrance Applications\n"
+                                            "• Scholarship Programs\n\n"
+                                            "⏰ Apply before deadlines!",
+                                parse_mode='Markdown'
+                            ),
+                            thumb_url='https://img.icons8.com/color/96/000000/student-registration.png',
+                            reply_markup=types.InlineKeyboardMarkup().add(
+                                types.InlineKeyboardButton("Apply Now", url="https://t.me/BiharEducationIN")
+                            )
+                        )
+                    )
+                
+                # Jobs
+                if not query or 'job' in query or 'vacancy' in query or 'naukri' in query:
+                    results.append(
+                        types.InlineQueryResultArticle(
+                            id='4',
+                            title='💼 Government Jobs',
+                            description='Latest government job notifications',
+                            input_message_content=types.InputTextMessageContent(
+                                message_text="💼 *Government Jobs Update*\n\n"
+                                            "Current vacancies:\n"
+                                            "• BPSC 2024 Recruitment\n"
+                                            "• Teacher Vacancies\n"
+                                            "• Bank Jobs\n"
+                                            "• SSC Notifications\n\n"
+                                            "📋 Eligibility and apply details available",
+                                parse_mode='Markdown'
+                            ),
+                            thumb_url='https://img.icons8.com/color/96/000000/job.png',
+                            reply_markup=types.InlineKeyboardMarkup().add(
+                                types.InlineKeyboardButton("View Jobs", url="https://t.me/BiharEducationIN")
+                            )
+                        )
+                    )
+                
+                # Scholarships
+                if not query or 'scholarship' in query or 'fund' in query or 'scholarship' in query:
+                    results.append(
+                        types.InlineQueryResultArticle(
+                            id='5',
+                            title='💰 Scholarships',
+                            description='Available scholarship programs',
+                            input_message_content=types.InputTextMessageContent(
+                                message_text="💰 *Scholarship Opportunities*\n\n"
+                                            "Open scholarship programs:\n"
+                                            "• State Merit Scholarship\n"
+                                            "• Minority Scholarships\n"
+                                            "• SC/ST Scholarships\n"
+                                            "• Post-Matric Scholarships\n\n"
+                                            "🎓 Financial support for students",
+                                parse_mode='Markdown'
+                            ),
+                            thumb_url='https://img.icons8.com/color/96/000000/scholarship.png',
+                            reply_markup=types.InlineKeyboardMarkup().add(
+                                types.InlineKeyboardButton("Apply Scholarship", url="https://t.me/BiharEducationIN")
+                            )
+                        )
+                    )
+                
+                # Contact Info
+                if not query or 'contact' in query or 'help' in query or 'sahayata' in query:
+                    results.append(
+                        types.InlineQueryResultArticle(
+                            id='6',
+                            title='📞 Contact Support',
+                            description='Get help and support information',
+                            input_message_content=types.InputTextMessageContent(
+                                message_text="📞 *Contact Bihar Education Support*\n\n"
+                                            "• Email: support@bihareducation.com\n"
+                                            "• Telegram: @BiharEducationSupport\n"
+                                            "• Website: bihareducation.com\n"
+                                            "• Response Time: 24 hours\n\n"
+                                            "🛠️ We're here to help you!",
+                                parse_mode='Markdown'
+                            ),
+                            thumb_url='https://img.icons8.com/color/96/000000/customer-support.png',
+                            reply_markup=types.InlineKeyboardMarkup().add(
+                                types.InlineKeyboardButton("Get Help", url="https://t.me/BiharEducationSupport")
+                            )
+                        )
+                    )
+                
+                # Bot Info
+                if not query or 'bot' in query or 'about' in query or 'information' in query:
+                    results.append(
+                        types.InlineQueryResultArticle(
+                            id='7',
+                            title='🤖 About This Bot',
+                            description='Information about Bihar Education Bot',
+                            input_message_content=types.InputTextMessageContent(
+                                message_text="🤖 *Bihar Education Bot*\n\n"
+                                            "• Automated education updates\n"
+                                            "• 25+ websites monitored\n"
+                                            "• Real-time notifications\n"
+                                            "• 100% free service\n"
+                                            "• Inline query support\n\n"
+                                            "🎯 Features: Exam results, admissions, jobs, scholarships\n"
+                                            "📱 Channel: @BiharEducationIN",
+                                parse_mode='Markdown'
+                            ),
+                            thumb_url='https://img.icons8.com/color/96/000000/robot.png',
+                            reply_markup=types.InlineKeyboardMarkup().add(
+                                types.InlineKeyboardButton("Start Bot", url="https://t.me/BiharEducationBot")
+                            )
+                        )
+                    )
+                
+                # Answer the inline query
+                self.bot.answer_inline_query(inline_query.id, results, cache_time=1, is_personal=True)
+                
+            except Exception as e:
+                logger.error(f"Inline query error: {e}")
 
     def is_admin(self, message):
         return (str(message.chat.id) in Config.ADMIN_IDS or 
@@ -398,6 +602,7 @@ Make education information accessible to every student in Bihar through automati
 📝 Total Updates Found: {update_count}
 ✅ Updates Posted: {posted_count}
 🔄 Check Interval: Every 30 minutes
+💡 Inline Queries: Enabled
 
 Bot is running smoothly! 🚀
         """
