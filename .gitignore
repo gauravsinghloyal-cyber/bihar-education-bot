@@ -1,10 +1,20 @@
-.env
-*.db
-*.log
-__pycache__/
-logs/
-*.pyc
-.DS_Store
+# Python
 venv/
-.env.local
-.env.production
+.env
+*.pyc
+__pycache__/
+*.log
+*.db
+.DS_Store
+lxml/
+lxml*
+
+# Build files
+*.so
+*.egg-info/
+build/
+dist/
+
+# IDE
+.vscode/
+.idea/
