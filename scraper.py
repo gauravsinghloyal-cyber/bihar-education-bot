@@ -1,4 +1,5 @@
 import requests
+import ssl
 from bs4 import BeautifulSoup
 import json
 import time
@@ -14,17 +15,17 @@ urllib3.disable_warnings()
 class BiharEducationScraper:
     def __init__(self):
         self.session = requests.Session()
-        retry_strategy = Retry(total=3,
-                               backoff_factor=1,
-                               status_forcelist=[429, 500, 502, 503, 504])
-        adapter = HTTPAdapter(max_retries=retry_strategy)
-        self.session.mount("http://", adapter)
-        self.session.mount("https://", adapter)
-
+                           
+                 
+        ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        ssl_context.verify_mode = ssl.CERT_NONE
+        ssl_context.options |= 0x4
+        self.session.verify = False
         self.session.headers.update({
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
         })         
-        self.session.verify = False
+        
     
     def load_websites(self):
         try:
@@ -37,7 +38,7 @@ class BiharEducationScraper:
     def scrape_website(self, website):
         try:
             logger.info(f"Scraping {website['name']}...")
-            response = self.session.get(website['url'], timeout=30, verify=False)
+            response = self.session.get(website['url'], timeout=30, verify=False,ssl=False)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
