@@ -4,7 +4,7 @@
       "name": "Bihar School Examination Board (BSEB)",
       "url": "https://biharboardonline.bihar.gov.in/",
       "category": "Board",
-      "selector": ".news-list li, .notice-list div, .marquee, .alert, .notification"
+      "selector": ".news-list li, .notice-list div, .marquee, .alert, .notification, table tr"
     },
     {
       "name": "Bihar Board of Open Schooling and Examination",
@@ -137,6 +137,18 @@
       "url": "https://www.mungeruniversity.ac.in/",
       "category": "University",
       "selector": ".news, .notice, .announcement, .update, .notification"
+    },
+    {
+      "name": "Free Job Alert",
+      "url": "https://www.freejobalert.com",
+      "category": "Job Alerts",
+      "selector": ".post, .news-item, .update, article, .list-group-item, .entry-title, .post-title"
+    },
+    {
+      "name": "Career Power Blog",
+      "url": "https://www.careerpower.in/blog/",
+      "category": "Education Blog",
+      "selector": ".blog-post, article, .post, .news-item, .update, .entry-title, .content, .post-details"
     }
   ]
 }
