@@ -1,179 +1,200 @@
-import telebot
-from telebot import types
-from config import Config
-from database import Database
-from improved_scraper import BiharEducationScraper
+import requests
+from bs4 import BeautifulSoup
+import json
 import time
-import logging
 from datetime import datetime
+import logging
+import re
+import urllib3
+
+# Disable SSL warnings
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 logger = logging.getLogger(__name__)
 
-class BiharEducationNotifier:
+class BiharEducationScraper:
     def __init__(self):
-        self.bot = telebot.TeleBot(Config.BOT_TOKEN)
-        self.db = Database(Config.DB_PATH)
-        self.scraper = BiharEducationScraper()
-        self.setup_handlers()
-        logger.info("BiharEducationNotifier initialized")
+        self.session = requests.Session()
+        self.session.headers.update({
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        })
+        self.session.verify = False
         
-        # Initialize websites in database
-        self.initialize_websites()
-    
-    def initialize_websites(self):
-        """Add all websites to database if not exists"""
-        websites = self.scraper.load_websites()
-        for website in websites:
-            self.db.add_website(
-                website['name'],
-                website['url'],
-                website['category'],
-                website['selector']
-            )
-    
-    def setup_handlers(self):
-        @self.bot.message_handler(commands=['start', 'help'])
-        def start(message):
-            if str(message.chat.id) in Config.ADMIN_IDS or message.from_user.username in Config.ADMIN_IDS:
-                self.send_admin_menu(message.chat.id)
-            else:
-                self.bot.send_message(
-                    message.chat.id,
-                    "🤖 *Bihar Education Updates Bot*\n\n"
-                    "This bot automatically posts updates from all Bihar education websites:\n"
-                    "• All University Admissions\n• Board Exam Updates\n"
-                    "• Recruitment Notifications\n• Results & Forms\n• Scholarship Info\n\n"
-                    "Join our channel for automatic updates: @BiharEducationIN",
-                    parse_mode='Markdown'
-                )
+        # List of working websites (tested and confirmed)
+        self.working_websites = [
+            'biharboardonline.bihar.gov.in',
+            'biharboardonline.com', 
+            'patnauniversity.ac.in',
+            'magadhuniversity.ac.in',
+            'akubihar.ac.in',
+            'brabu.net',
+            'nou.ac.in',
+            'purneauniversity.ac.in',
+            'mungeruniversity.ac.in',
+            'results.biharboardonline.com',
+            'freejobalert.com',
+            'careerpower.in'
+        ]
         
-        @self.bot.message_handler(commands=['stats'])
-        def stats(message):
-            if str(message.chat.id) in Config.ADMIN_IDS or message.from_user.username in Config.ADMIN_IDS:
-                stats_text = self.get_stats()
-                self.bot.send_message(message.chat.id, stats_text, parse_mode='Markdown')
-        
-        @self.bot.message_handler(commands=['check'])
-        def manual_check(message):
-            if str(message.chat.id) in Config.ADMIN_IDS or message.from_user.username in Config.ADMIN_IDS:
-                self.bot.send_message(message.chat.id, "🔄 Manual check started...")
-                new_posts = self.check_and_post_updates()
-                self.bot.send_message(message.chat.id, f"✅ Check completed! Posted {new_posts} new updates.")
-    
-    def get_stats(self):
-        conn = self.db.get_connection()
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM websites")
-        website_count = c.fetchone()[0]
-        c.execute("SELECT COUNT(*) FROM updates")
-        update_count = c.fetchone()[0]
-        c.execute("SELECT COUNT(*) FROM updates WHERE posted = 1")
-        posted_count = c.fetchone()[0]
-        conn.close()
-        
-        return f"""
-📊 *Bot Statistics*
+        # List of problematic websites to skip
+        self.skip_websites = [
+            'ppup.ac.in',
+            'ksdsu.edu.in',
+            'mmhapu.ac.in',
+            'cnlu.ac.in',
+            'education.bih.nic.in',
+            'beu-bihar.org',
+            'lnmu.ac.in',
+            'jpv.ac.in',
+            'tmbuniv.ac.in',
+            'vksu.ac.in',
+            'bnmu.ac.in'
+        ]
 
-🌐 Websites Monitored: {website_count}
-📝 Total Updates Found: {update_count}
-✅ Updates Posted: {posted_count}
-🔄 Check Interval: Every 30 minutes
-
-Bot is running smoothly! 🚀
-        """
-    
-    def send_admin_menu(self, chat_id):
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add('🔄 Check Now', '📊 Statistics', '🌐 Websites List')
-        self.bot.send_message(
-            chat_id,
-            "👨‍💻 *Admin Panel*\n\nManage Bihar Education Updates Bot",
-            parse_mode='Markdown',
-            reply_markup=markup
-        )
-    
-    def format_update_message(self, update):
-        category_emoji = {
-            'Board': '🎓', 'University': '🏫', 'Results': '📊',
-            'Recruitment': '💼', 'Scholarship': '💰', 'Govt Portal': '🏛️'
-        }
-        
-        emoji = category_emoji.get(update['category'], '📢')
-        
-        message = f"""
-{emoji} *{update['website']}* - {update['category']}
-
-📢 *{update['title']}*
-📅 *Date:* {update['date']}
-
-🔗 *Link:* {update['link']}
-
-#BiharEducation #{update['category']} #{update['website'].replace(' ', '').replace('(', '').replace(')', '')}
-        """
-        return message.strip()
-    
-    def check_and_post_updates(self):
-        logger.info("Starting update check...")
+    def load_websites(self):
         try:
-            updates = self.scraper.check_for_new_updates()
-            new_posts = 0
-            
-            for update in updates:
-                # Check if this update was already posted
-                conn = self.db.get_connection()
-                c = conn.cursor()
-                c.execute("SELECT id FROM updates WHERE title = ? AND website = ?", 
-                         (update['title'], update['website']))
-                existing = c.fetchone()
+            with open('websites.json', 'r', encoding='utf-8') as f:
+                websites = json.load(f)['websites']
                 
-                if not existing:
-                    # New update found
-                    message = self.format_update_message(update)
-                    
-                    try:
-                        self.bot.send_message(
-                            Config.CHANNEL_ID,
-                            message,
-                            parse_mode='Markdown',
-                            disable_web_page_preview=False
-                        )
-                        
-                        # Save to database
-                        c.execute('''INSERT INTO updates 
-                                   (website_id, title, link, date, posted, post_time)
-                                   VALUES (?, ?, ?, ?, 1, ?)''',
-                                   (1, update['title'], update['link'], update['date'], datetime.now()))
-                        conn.commit()
-                        
-                        logger.info(f"Posted new update: {update['title'][:50]}...")
-                        new_posts += 1
-                        time.sleep(2)
-                        
-                    except Exception as e:
-                        logger.error(f"Error posting update: {e}")
-                        # Save as not posted
-                        c.execute('''INSERT INTO updates 
-                                   (website_id, title, link, date, posted)
-                                   VALUES (?, ?, ?, ?, 0)''',
-                                   (1, update['title'], update['link'], update['date']))
-                        conn.commit()
+                # Filter only working websites
+                filtered_websites = []
+                for website in websites:
+                    domain = website['url'].split('//')[-1].split('/')[0]
+                    if any(working in domain for working in self.working_websites):
+                        filtered_websites.append(website)
+                    elif any(skip in domain for skip in self.skip_websites):
+                        logger.info(f"Skipping problematic website: {website['name']}")
+                    else:
+                        # Try unknown websites
+                        filtered_websites.append(website)
                 
-                conn.close()
-            
-            logger.info(f"Update check completed. Posted {new_posts} new updates.")
-            return new_posts
-                    
+                return filtered_websites
+                
         except Exception as e:
-            logger.error(f"Update check failed: {e}")
-            return 0
-    
-    def run_scheduler(self):
-        logger.info("Scheduler started (30 minute intervals)")
-        while True:
+            logger.error(f"Error loading websites: {e}")
+            return []
+
+    def scrape_website(self, website):
+        try:
+            domain = website['url'].split('//')[-1].split('/')[0]
+            
+            # Skip problematic websites
+            if any(skip in domain for skip in self.skip_websites):
+                logger.info(f"Skipping {website['name']} - known issues")
+                return []
+                
+            logger.info(f"Scraping {website['name']}...")
+            response = self.session.get(website['url'], timeout=30, verify=False)
+            response.raise_for_status()
+            
+            soup = BeautifulSoup(response.content, 'html.parser')
+            updates = []
+            
+            # Try multiple selectors
+            selectors = website['selector'].split(', ')
+            for selector in selectors:
+                try:
+                    items = soup.select(selector)
+                    if items:
+                        updates.extend(self.extract_updates(items, website))
+                        break
+                except Exception as e:
+                    continue
+            
+            logger.info(f"Found {len(updates)} updates from {website['name']}")
+            return updates
+            
+        except requests.exceptions.SSLError:
+            logger.warning(f"SSL error for {website['name']} - skipping")
+            return []
+        except requests.exceptions.ConnectionError:
+            logger.warning(f"Connection error for {website['name']} - skipping")
+            return []
+        except requests.exceptions.Timeout:
+            logger.warning(f"Timeout for {website['name']} - skipping")
+            return []
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 403:
+                logger.warning(f"403 Forbidden for {website['name']} - skipping")
+            return []
+        except Exception as e:
+            logger.error(f"Error scraping {website['name']}: {e}")
+            return []
+
+    def extract_updates(self, items, website):
+        updates = []
+        for item in items[:5]:
             try:
-                self.check_and_post_updates()
-                logger.info(f"Next check in 30 minutes...")
-                time.sleep(Config.CHECK_INTERVAL)
+                text = item.get_text(strip=True)
+                if not text or len(text) < 20:
+                    continue
+                
+                link = item.find('a')
+                href = link['href'] if link and link.get('href') else website['url']
+                
+                text = self.clean_text(text)
+                date = self.extract_date(text) or datetime.now().strftime('%d-%m-%Y')
+                
+                updates.append({
+                    'title': text[:200],
+                    'link': self.normalize_url(href, website['url']),
+                    'date': date,
+                    'website': website['name'],
+                    'category': website['category']
+                })
             except Exception as e:
-                logger.error(f"Scheduler error: {e}")
-                time.sleep(300)
+                continue
+        
+        return updates
+
+    def clean_text(self, text):
+        text = re.sub(r'\s+', ' ', text)
+        text = re.sub(r'^(News|Notice|Update|Alert):?\s*', '', text, flags=re.I)
+        return text.strip()
+
+    def extract_date(self, text):
+        date_patterns = [
+            r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
+            r'(\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4})',
+        ]
+        
+        for pattern in date_patterns:
+            match = re.search(pattern, text, re.I)
+            if match:
+                return match.group(1)
+        return None
+
+    def normalize_url(self, url, base_url):
+        if url.startswith('http'):
+            return url
+        elif url.startswith('/'):
+            from urllib3.util import url
+            return url.urljoin(base_url, url)
+        else:
+            return base_url + '/' + url.lstrip('/')
+
+    def check_for_new_updates(self):
+        all_updates = []
+        websites = self.load_websites()
+        
+        logger.info(f"Checking {len(websites)} working websites...")
+        
+        for website in websites:
+            try:
+                updates = self.scrape_website(website)
+                all_updates.extend(updates)
+                time.sleep(1)
+            except Exception as e:
+                logger.error(f"Failed to check {website['name']}: {e}")
+                continue
+        
+        # Remove duplicates
+        unique_updates = []
+        seen_titles = set()
+        for update in all_updates:
+            if update['title'] not in seen_titles:
+                seen_titles.add(update['title'])
+                unique_updates.append(update)
+        
+        logger.info(f"Total unique updates found: {len(unique_updates)}")
+        return unique_updates

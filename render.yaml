@@ -1,5 +1,5 @@
 services:
-  - type: web
+  - type: worker
     name: bihar-education-bot
     env: python
     plan: free
