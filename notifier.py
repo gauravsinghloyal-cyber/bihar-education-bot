@@ -2,7 +2,7 @@ import telebot
 from telebot import types
 from config import Config
 from database import Database
-from scraper import BiharEducationScraper
+from improved_scraper import BiharEducationScraper
 import time
 import logging
 from datetime import datetime
