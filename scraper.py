@@ -38,7 +38,7 @@ class BiharEducationScraper:
     def scrape_website(self, website):
         try:
             logger.info(f"Scraping {website['name']}...")
-            response = self.session.get(website['url'], timeout=30, verify=False,ssl=False)
+            response = self.session.get(website['url'], timeout=30, verify=False,)
             response.raise_for_status()
             
             soup = BeautifulSoup(response.content, 'html.parser')
