@@ -1,246 +1,177 @@
-import requests
-from bs4 import BeautifulSoup
-import json
+import os
+import schedule
 import time
-from datetime import datetime
-import logging
-import re
-import urllib3
-from urllib.parse import urljoin
+import telebot
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-# Disable SSL warnings
-urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+# --- अन्य फाइलों से क्लास इम्पोर्ट करें ---
+# यह मानें कि ये फाइलें आपके प्रोजेक्ट में मौजूद हैं
+from improved_scraper import BiharEducationScraper
+from database import Database
 
-logger = logging.getLogger(__name__)
-
-class BiharEducationScraper:
+class BiharEducationNotifier:
     def __init__(self):
-        self.session = requests.Session()
-        self.session.headers.update({
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-        })
-        self.session.verify = False
+        # सबसे सुरक्षित तरीका: टोकन को .env फ़ाइल से लोड करें
+        self.TOKEN = os.getenv('TELEGRAM_TOKEN')
+        if not self.TOKEN:
+            raise ValueError("TELEGRAM_TOKEN नहीं मिला! कृपया अपनी .env फ़ाइल जांचें।")
         
-        # List of working websites (tested and confirmed)
-        self.working_websites = [
-            'biharboardonline.bihar.gov.in',
-            'biharboardonline.com', 
-            'patnauniversity.ac.in',
-            'magadhuniversity.ac.in',
-            'akubihar.ac.in',
-            'brabu.net',
-            'nou.ac.in',
-            'purneauniversity.ac.in',
-            'mungeruniversity.ac.in',
-            'results.biharboardonline.com',
-            'freejobalert.com',
-            'careerpower.in'
+        self.bot = telebot.TeleBot(self.TOKEN, parse_mode='HTML')
+        self.scraper = BiharEducationScraper()
+        self.db = Database()
+        self.setup_handlers()
+
+    # --- कीबोर्ड बनाने वाले हेल्पर फंक्शन्स (कोई बदलाव नहीं) ---
+    def _main_menu_keyboard(self):
+        """मुख्य मेनू का कीबोर्ड बनाता है।"""
+        keyboard = [
+            [InlineKeyboardButton("📋 सरकारी नौकरियां", callback_data='menu_govt_jobs')],
+            [InlineKeyboardButton("🎓 यूनिवर्सिटी जानकारी", callback_data='menu_university_info')],
+            [InlineKeyboardButton("📚 स्टडी मटेरियल", callback_data='menu_study_material')],
+            [InlineKeyboardButton("❓ डेली क्विज़", callback_data='menu_daily_quiz')]
         ]
-        
-        # List of problematic websites to skip
-        self.skip_websites = [
-            'ppup.ac.in',
-            'ksdsu.edu.in',
-            'mmhapu.ac.in',
-            'cnlu.ac.in',
-            'education.bih.nic.in',
-            'beu-bihar.org',
-            'lnmu.ac.in',
-            'jpv.ac.in',
-            'tmbuniv.ac.in',
-            'vksu.ac.in',
-            'bnmu.ac.in'
+        return InlineKeyboardMarkup(keyboard)
+
+    def _govt_jobs_keyboard(self):
+        """सरकारी नौकरियों के सब-मेनू का कीबोर्ड बनाता है।"""
+        keyboard = [
+            [InlineKeyboardButton("✅ BPSC Jobs", callback_data='fetch_jobs_bpsc')],
+            [InlineKeyboardButton("👮 Bihar Police", callback_data='fetch_jobs_police')],
+            [InlineKeyboardButton("🧑‍🏫 Teaching Jobs", callback_data='fetch_jobs_teaching')],
+            [InlineKeyboardButton("⬅️ वापस मुख्य मेनू पर", callback_data='back_to_main')]
         ]
+        return InlineKeyboardMarkup(keyboard)
 
-    def load_websites(self):
-        try:
-            with open('websites.json', 'r', encoding='utf-8') as f:
-                websites = json.load(f)['websites']
-                
-                # Filter only working websites
-                filtered_websites = []
-                for website in websites:
-                    domain = website['url'].split('//')[-1].split('/')[0]
-                    if any(working in domain for working in self.working_websites):
-                        filtered_websites.append(website)
-                    elif any(skip in domain for skip in self.skip_websites):
-                        logger.info(f"Skipping problematic website: {website['name']}")
-                    else:
-                        # Try unknown websites
-                        filtered_websites.append(website)
-                
-                return filtered_websites
-                
-        except Exception as e:
-            logger.error(f"Error loading websites: {e}")
-            return []
-
-    def scrape_website(self, website):
-        try:
-            domain = website['url'].split('//')[-1].split('/')[0]
-            
-            # Skip problematic websites
-            if any(skip in domain for skip in self.skip_websites):
-                logger.info(f"Skipping {website['name']} - known issues")
-                return []
-                
-            logger.info(f"Scraping {website['name']}...")
-            
-            # Special handling for Bihar government websites
-            response = self.session.get(website['url'], timeout=30, verify=False)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            updates = []
-            
-            # Try multiple selectors
-            selectors = website['selector'].split(', ')
-            for selector in selectors:
-                try:
-                    items = soup.select(selector)
-                    if items:
-                        updates.extend(self.extract_updates(items, website))
-                        break
-                except Exception as e:
-                    continue
-            
-            logger.info(f"Found {len(updates)} updates from {website['name']}")
-            return updates
-            
-        except requests.exceptions.SSLError:
-            logger.warning(f"SSL error for {website['name']} - trying alternative approach")
-            return self.fallback_scrape(website)
-        except requests.exceptions.ConnectionError:
-            logger.warning(f"Connection error for {website['name']} - skipping")
-            return []
-        except requests.exceptions.Timeout:
-            logger.warning(f"Timeout for {website['name']} - skipping")
-            return []
-        except requests.exceptions.HTTPError as e:
-            if e.response.status_code == 403:
-                logger.warning(f"403 Forbidden for {website['name']} - skipping")
-            return []
-        except Exception as e:
-            error_msg = f"""
-❌ *Temporary Issue Detected*
-
-⚠️ *Problem:* Website scraping failed
-🔧 *Status:* Automatic retry in 30 minutes
-⏰ *ETA:* Next scheduled check
-
-📋 *Affected Website:* {website['name']}
-🔄 *Workaround:* Manual check later
-
-*Sorry for the inconvenience!* 🙏
-            """
-            logger.error(error_msg)
-            return []
-
-    def fallback_scrape(self, website):
-        """Alternative scraping method for SSL issues"""
-        try:
-            # Try without session for SSL issues
-            response = requests.get(website['url'], timeout=30, verify=False)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            updates = []
-            
-            # Common selectors for fallback
-            common_selectors = [
-                'a[href*="news"]', 'a[href*="notice"]', 'a[href*="update"]',
-                'a[href*="alert"]', '.content', 'marquee', 'table tr'
-            ]
-            
-            for selector in common_selectors:
-                try:
-                    items = soup.select(selector)
-                    if items:
-                        updates.extend(self.extract_updates(items, website))
-                        if updates:
-                            break
-                except:
-                    continue
-            
-            return updates
-            
-        except Exception as e:
-            logger.warning(f"Fallback also failed for {website['name']}: {e}")
-            return []
-
-    def extract_updates(self, items, website):
-        updates = []
-        for item in items[:5]:
-            try:
-                text = item.get_text(strip=True)
-                if not text or len(text) < 20:
-                    continue
-                
-                link = item.find('a')
-                href = link['href'] if link and link.get('href') else website['url']
-                
-                text = self.clean_text(text)
-                date = self.extract_date(text) or datetime.now().strftime('%d-%m-%Y')
-                
-                updates.append({
-                    'title': text[:200],
-                    'link': self.normalize_url(href, website['url']),
-                    'date': date,
-                    'website': website['name'],
-                    'category': website['category']
-                })
-            except Exception as e:
-                continue
-        
-        return updates
-
-    def clean_text(self, text):
-        text = re.sub(r'\s+', ' ', text)
-        text = re.sub(r'^(News|Notice|Update|Alert):?\s*', '', text, flags=re.I)
-        return text.strip()
-
-    def extract_date(self, text):
-        date_patterns = [
-            r'(\d{1,2}[-/]\d{1,2}[-/]\d{2,4})',
-            r'(\d{1,2}\s+(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\s+\d{2,4})',
+    def _university_info_keyboard(self):
+        """यूनिवर्सिटी जानकारी के सब-मेनू का कीबोर्ड बनाता है।"""
+        keyboard = [
+            [InlineKeyboardButton("🏛️ Patna University", callback_data='fetch_uni_patna')],
+            [InlineKeyboardButton("🛠️ IIT Patna", callback_data='fetch_uni_iitp')],
+            [InlineKeyboardButton("⚙️ NIT Patna", callback_data='fetch_uni_nitp')],
+            [InlineKeyboardButton("⬅️ वापस मुख्य मेनू पर", callback_data='back_to_main')]
         ]
-        
-        for pattern in date_patterns:
-            match = re.search(pattern, text, re.I)
-            if match:
-                return match.group(1)
-        return None
+        return InlineKeyboardMarkup(keyboard)
 
-    def normalize_url(self, url, base_url):
-        if url.startswith('http'):
-            return url
-        elif url.startswith('/'):
-            return urljoin(base_url, url)
-        else:
-            return base_url + '/' + url.lstrip('/')
+    def _study_material_keyboard(self):
+        """स्टडी मटेरियल के सब-मेनू का कीबोर्ड बनाता है।"""
+        keyboard = [
+            [InlineKeyboardButton("📑 सिलेबस", callback_data='fetch_study_syllabus')],
+            [InlineKeyboardButton("📝 पिछले वर्ष के पेपर", callback_data='fetch_study_papers')],
+            [InlineKeyboardButton("📕 मुफ्त PDFs", callback_data='fetch_study_pdfs')],
+            [InlineKeyboardButton("⬅️ वापस मुख्य मेनू पर", callback_data='back_to_main')]
+        ]
+        return InlineKeyboardMarkup(keyboard)
+        
+    # --- **नया फीचर: मैसेज फॉर्मेटिंग** ---
+    def _format_updates_message(self, updates, title):
+        """अपडेट्स की लिस्ट को एक सुंदर मैसेज में फॉर्मेट करता है।"""
+        if not updates:
+            return f"<b>{title}</b>\n\nफिलहाल कोई नया अपडेट नहीं है। 😔"
+        
+        message = f"<b>{title}</b>\n\n"
+        for update in updates[:5]: # केवल टॉप 5 अपडेट्स दिखाएं
+            message += f"🔹 <b>{update.get('title', 'N/A')}</b>\n"
+            message += f"   <a href='{update.get('link', '#')}'>🔗 अभी देखें</a> | 📅 {update.get('date', 'N/A')}\n\n"
+        
+        if len(updates) > 5:
+            message += f"<i>...और {len(updates) - 5} अन्य अपडेट्स।</i>"
+            
+        return message
 
-    def check_for_new_updates(self):
-        all_updates = []
-        websites = self.load_websites()
-        
-        logger.info(f"Checking {len(websites)} working websites...")
-        
-        for website in websites:
-            try:
-                updates = self.scrape_website(website)
-                all_updates.extend(updates)
-                time.sleep(1)
-            except Exception as e:
-                logger.error(f"Failed to check {website['name']}: {e}")
-                continue
-        
-        # Remove duplicates
-        unique_updates = []
-        seen_titles = set()
-        for update in all_updates:
-            if update['title'] not in seen_titles:
-                seen_titles.add(update['title'])
-                unique_updates.append(update)
-        
-        logger.info(f"Total unique updates found: {len(unique_updates)}")
-        return unique_updates
+    # --- बॉट के हैंडलर्स ---
+    def setup_handlers(self):
+        """टेलीग्राम कमांड्स और बटन्स के लिए हैंडलर्स सेट करता है।"""
+        @self.bot.message_handler(commands=['start', 'help'])
+        def send_welcome(message):
+            # नए यूजर को डेटाबेस में जोड़ें
+            self.db.add_user(message.chat.id)
+            welcome_text = "नमस्ते! 🙏\nबिहार एजुकेशन बॉट में आपका स्वागत है।\n\nकृपया नीचे दिए गए विकल्पों में से एक चुनें:"
+            self.bot.send_message(message.chat.id, welcome_text, reply_markup=self._main_menu_keyboard())
+
+        @self.bot.callback_query_handler(func=lambda call: True)
+        def handle_callback_query(call):
+            """सभी बटन क्लिक्स को हैंडल करता है।"""
+            self.bot.answer_callback_query(call.id)
+            chat_id = call.message.chat.id
+            message_id = call.message.message_id
+            
+            # --- **मुख्य मेनू हैंडलिंग (अपडेटेड)** ---
+            if call.data == 'menu_govt_jobs':
+                self.bot.edit_message_text("सरकारी नौकरी श्रेणी चुनें:", chat_id, message_id, reply_markup=self._govt_jobs_keyboard())
+            
+            elif call.data == 'menu_university_info':
+                self.bot.edit_message_text("यूनिवर्सिटी चुनें:", chat_id, message_id, reply_markup=self._university_info_keyboard())
+
+            elif call.data == 'menu_study_material':
+                self.bot.edit_message_text("स्टडी मटेरियल का प्रकार चुनें:", chat_id, message_id, reply_markup=self._study_material_keyboard())
+
+            elif call.data == 'menu_daily_quiz':
+                self.bot.edit_message_text("डेली क्विज़ की सुविधा जल्द ही शुरू होगी!", chat_id, message_id)
+
+            # --- **नया फीचर: डेटा लाने की प्रक्रिया** ---
+            elif call.data.startswith('fetch_'):
+                self.bot.edit_message_text("⏳ कृपया प्रतीक्षा करें, जानकारी लाई जा रही है...", chat_id, message_id)
+                
+                parts = call.data.split('_')
+                category_type = parts[1] # 'jobs', 'uni', 'study'
+                category_name = parts[2].upper() # 'BPSC', 'PATNA', 'SYLLABUS'
+                
+                # डेटाबेस से अपडेट्स प्राप्त करें
+                updates = self.db.get_updates_by_category(category_name)
+                
+                message_title = f"{category_name} अपडेट्स"
+                formatted_message = self._format_updates_message(updates, message_title)
+                
+                # वापस जाने वाले बटन के साथ कीबोर्ड चुनें
+                back_keyboard = self._main_menu_keyboard() # डिफ़ॉल्ट
+                if category_type == 'jobs':
+                    back_keyboard = self._govt_jobs_keyboard()
+                elif category_type == 'uni':
+                    back_keyboard = self._university_info_keyboard()
+                elif category_type == 'study':
+                    back_keyboard = self._study_material_keyboard()
+
+                self.bot.edit_message_text(formatted_message, chat_id, message_id, reply_markup=back_keyboard, disable_web_page_preview=True)
+
+            # --- वापस जाने का बटन ---
+            elif call.data == 'back_to_main':
+                welcome_text = "मुख्य मेनू पर वापस आ गए।\n\nकृपया नीचे दिए गए विकल्पों में से एक चुनें:"
+                self.bot.edit_message_text(welcome_text, chat_id, message_id, reply_markup=self._main_menu_keyboard())
+
+    # --- **शेड्यूलर (अपडेटेड)** ---
+    def send_daily_update(self):
+        """नई जानकारी स्क्रैप करता है, DB में सेव करता है और यूजर्स को भेजता है।"""
+        print("📰 दैनिक अपडेट की प्रक्रिया शुरू हो रही है...")
+        try:
+            new_updates = self.scraper.check_for_new_updates()
+            if new_updates:
+                # नए अपडेट्स को डेटाबेस में सेव करें और केवल 'नए' वाले प्राप्त करें
+                truly_new_items = self.db.save_updates(new_updates)
+                
+                if truly_new_items:
+                    print(f"✅ {len(truly_new_items)} नए अपडेट्स मिले। यूजर्स को सूचित किया जा रहा है...")
+                    update_message = self._format_updates_message(truly_new_items, "आज के नए अपडेट्स ✨")
+                    
+                    # सभी यूजर्स को अपडेट भेजें
+                    all_users = self.db.get_all_user_ids()
+                    for user_id in all_users:
+                        try:
+                            self.bot.send_message(user_id, update_message, disable_web_page_preview=True)
+                            time.sleep(0.1) # स्पैमिंग से बचने के लिए थोड़ा रुकें
+                        except Exception as e:
+                            print(f"User {user_id} को मैसेज भेजने में विफल: {e}")
+                else:
+                    print("👍 कोई भी 'सचमुच नया' अपडेट नहीं मिला।")
+            else:
+                print("🤷‍♂️ स्क्रैपर को कोई अपडेट नहीं मिला।")
+        except Exception as e:
+            print(f"❌ दैनिक अपडेट में त्रुटि: {e}")
+
+    def run_scheduler(self):
+        """शेड्यूलर को चलाता है।"""
+        # हर 30 मिनट में अपडेट्स चेक करें
+        schedule.every(30).minutes.do(self.send_daily_update)
+        while True:
+            schedule.run_pending()
+            time.sleep(1)
+
