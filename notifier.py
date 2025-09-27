@@ -1,705 +1,113 @@
-import telebot
-from telebot import types
-from config import Config
-from database import Database
-from improved_scraper import BiharEducationScraper
+import os
+import schedule
 import time
-import logging
-from datetime import datetime
-
-logger = logging.getLogger(__name__)
+import telebot
+from telebot.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 class BiharEducationNotifier:
     def __init__(self):
-        self.bot = telebot.TeleBot(Config.BOT_TOKEN)
-        self.db = Database(Config.DB_PATH)
-        self.scraper = BiharEducationScraper()
+        # सबसे सुरक्षित तरीका: टोकन को .env फ़ाइल से लोड करें
+        self.TOKEN = os.getenv('TELEGRAM_TOKEN')
+        if not self.TOKEN:
+            raise ValueError("TELEGRAM_TOKEN नहीं मिला! कृपया अपनी .env फ़ाइल जांचें।")
+        
+        self.bot = telebot.TeleBot(self.TOKEN)
         self.setup_handlers()
-        logger.info("BiharEducationNotifier initialized")
-        
-        # Initialize websites in database
-        self.initialize_websites()
 
-    def initialize_websites(self):
-        """Add all websites to database if not exists"""
-        websites = self.scraper.load_websites()
-        for website in websites:
-            self.db.add_website(
-                website['name'],
-                website['url'],
-                website['category'],
-                website['selector']
-            )
+    # --- कीबोर्ड बनाने वाले हेल्पर फंक्शन्स ---
+    def _main_menu_keyboard(self):
+        """मुख्य मेनू का कीबोर्ड बनाता है।"""
+        keyboard = [
+            [InlineKeyboardButton("📋 सरकारी नौकरियां", callback_data='menu_govt_jobs')],
+            [InlineKeyboardButton("🎓 यूनिवर्सिटी जानकारी", callback_data='menu_university_info')],
+            [InlineKeyboardButton("📚 स्टडी मटेरियल", callback_data='menu_study_material')],
+            [InlineKeyboardButton("❓ डेली क्विज़", callback_data='menu_daily_quiz')]
+        ]
+        return InlineKeyboardMarkup(keyboard)
 
+    def _govt_jobs_keyboard(self):
+        """सरकारी नौकरियों के सब-मेनू का कीबोर्ड बनाता है।"""
+        keyboard = [
+            [InlineKeyboardButton("✅ BPSC Jobs", callback_data='jobs_bpsc')],
+            [InlineKeyboardButton("👮 Bihar Police", callback_data='jobs_police')],
+            [InlineKeyboardButton("🧑‍🏫 Teaching Jobs", callback_data='jobs_teaching')],
+            [InlineKeyboardButton("⬅️ वापस मुख्य मेनू पर", callback_data='back_to_main')]
+        ]
+        return InlineKeyboardMarkup(keyboard)
+
+    def _university_info_keyboard(self):
+        """यूनिवर्सिटी जानकारी के सब-मेनू का कीबोर्ड बनाता है।"""
+        keyboard = [
+            [InlineKeyboardButton("🏛️ Patna University", callback_data='uni_patna')],
+            [InlineKeyboardButton("🛠️ IIT Patna", callback_data='uni_iitp')],
+            [InlineKeyboardButton("⚙️ NIT Patna", callback_data='uni_nitp')],
+            [InlineKeyboardButton("⬅️ वापस मुख्य मेनू पर", callback_data='back_to_main')]
+        ]
+        return InlineKeyboardMarkup(keyboard)
+
+    def _study_material_keyboard(self):
+        """स्टडी मटेरियल के सब-मेनू का कीबोर्ड बनाता है।"""
+        keyboard = [
+            [InlineKeyboardButton("📑 सिलेबस", callback_data='study_syllabus')],
+            [InlineKeyboardButton("📝 पिछले वर्ष के पेपर", callback_data='study_papers')],
+            [InlineKeyboardButton("📕 मुफ्त PDFs", callback_data='study_pdfs')],
+            [InlineKeyboardButton("⬅️ वापस मुख्य मेनू पर", callback_data='back_to_main')]
+        ]
+        return InlineKeyboardMarkup(keyboard)
+
+    # --- बॉट के हैंडलर्स ---
     def setup_handlers(self):
-        # ==================== BASIC COMMANDS ====================
-        @self.bot.message_handler(commands=['start'])
-        def start(message):
-            welcome_text = """
-🎓 *Bihar Education Bot - Advanced Commands* 🎓
-
-🤖 *Basic Commands:*
-/start - Show this help message
-/help - Get support information  
-/stats - View bot statistics
-/about - About this bot
-/features - See all features
-/privacy - Privacy policy
-
-📊 *Information Commands:*
-/websites - Supported websites list
-/categories - Available categories
-/technology - Tech stack info
-/team - Development team
-
-👨‍💻 *Admin Commands:* (Admin only)
-/check - Manual update check
-/status - System status
-/maintenance - Maintenance notice
-
-💡 *Pro Tip:* Type `@BiharEducationBot` in any chat to access quick updates!
-
-*Type any command to get started!* 🚀
-            """
-            self.bot.send_message(message.chat.id, welcome_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['help'])
-        def help_command(message):
-            help_text = """
-🆘 *Advanced Help Center* 🆘
-
-📞 *Support Channels:*
-• Email: support@bihareducation.com
-• Phone: +91-XXXXX-XXXXX
-• Telegram: @BiharEducationSupport
-
-🛠️ *Quick Solutions:*
-• Bot not responding - Try /restart
-• No updates - Check /status
-• Notification issues - Check channel
-• Website problems - Report using /report
-
-💡 *Inline Usage:* Type `@BiharEducationBot` followed by:
-• `latest` - Recent updates
-• `results` - Exam results
-• `jobs` - Government vacancies
-• `admissions` - Open admissions
-• `scholarships` - Available funds
-
-⏰ *Response Time:*
-• Normal: 24-48 hours
-• Urgent: 6-12 hours
-• Emergency: 1-2 hours
-
-*We're here to help you!* 🤝
-            """
-            self.bot.send_message(message.chat.id, help_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['about'])
-        def about_bot(message):
-            about_text = """
-🎓 *About Bihar Education Bot* 🎓
-
-🤖 *Bot Overview:*
-Automated system providing real-time updates from Bihar education institutions. Monitoring 25+ websites for latest information.
-
-🚀 *Mission:*
-Make education information accessible to every student in Bihar through automation and technology.
-
-📊 *Stats & Achievements:*
-• 25+ Websites Monitored
-• 1000+ Daily Updates
-• 99.9% Uptime
-• 30-minute Refresh Rate
-
-🛠️ *Technology Stack:*
-• Python 3.11 + Telegram Bot API
-• BeautifulSoup4 + SQLite
-• Render Hosting + GitHub
-
-👥 *Developer:*
-• Suman Kumar Soren
-• B.Tech Computer Science
-• 3+ Years Experience
-• Bihar, India
-
-💡 *Inline Features:* Type `@BiharEducationBot` in any chat for quick access to:
-• Latest updates • Exam results • Job notifications
-• Admission info • Scholarships • Contact details
-
-*Building the future of education information!* 🚀
-            """
-            self.bot.send_message(message.chat.id, about_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['privacy'])
-        def privacy_policy(message):
-            privacy_text = """
-🔒 *Privacy Policy Summary* 🔒
-
-📊 *We Collect:*
-- Basic user info (ID, username)
-- Usage statistics
-- Technical data
-
-🚫 *We Don't Collect:*
-- Private messages content
-- Personal documents
-- Location data
-- Payment information
-
-🛡️ *Your Rights:*
-- Access your data
-- Request deletion
-- Opt-out of data collection
-- Transparency about usage
-
-📞 *Contact Privacy Team:*
-• Email: privacy@bihareducation.com
-• Response Time: 48 hours
-
-*Your privacy is our priority!* 🔐
-            """
-            self.bot.send_message(message.chat.id, privacy_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['features'])
-        def features(message):
-            features_text = """
-🚀 *Advanced Features* 🚀
-
-📡 *Real-time Updates:*
-• Automatic scraping every 30 minutes
-• 25+ Bihar education websites
-• Instant channel notifications
-
-🎯 *Smart Filtering:*
-• Category-wise updates
-• Priority-based posting
-• Automatic error recovery
-
-🔔 *Notification System:*
-• Custom notification preferences
-• Scheduled summaries
-• Emergency alerts
-
-📊 *Analytics & Reports:*
-• Daily performance reports
-• Website status monitoring
-• Error rate tracking
-
-💡 *Inline Query Support:*
-Type `@BiharEducationBot` in any chat for:
-• Quick updates access
-• Instant information sharing
-• Easy content discovery
-
-*Experience the power of automation!* 💪
-            """
-            self.bot.send_message(message.chat.id, features_text, parse_mode='Markdown')
-
-        # ==================== INFORMATION COMMANDS ====================
-        @self.bot.message_handler(commands=['websites'])
-        def websites_list(message):
-            websites_text = """
-🌐 *Supported Websites List* 🌐
-
-🎓 *Education Boards:*
-• Bihar School Examination Board (BSEB)
-• Bihar Board of Open Schooling
-• Bihar Sanskrit Shiksha Board
-
-🏫 *Universities:*
-• Patna University
-• Magadh University
-• Aryabhatta Knowledge University
-• Nalanda Open University
-
-💼 *Job Portals:*
-• Free Job Alert
-• Career Power Blog
-• BPSC Updates
-
-📊 *Results & Exams:*
-• BSEB Results Portal
-• Intermediate Results
-• Matric Results
-
-*Total: 25+ Websites Monitored* 📈
-            """
-            self.bot.send_message(message.chat.id, websites_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['categories'])
-        def categories_list(message):
-            categories_text = """
-📁 *Available Categories* 📁
-
-🎓 *Board Exams:*
-- Matriculation Updates
-- Intermediate News
-- Exam Date Sheets
-- Result Declarations
-
-🏫 *University:*
-- Admission Notifications
-- Academic Calendars  
-- Exam Schedules
-- Result Publications
-
-💼 *Employment:*
-- Government Jobs
-- Teacher Recruitment
-- Bank Vacancies
-
-💰 *Scholarship:*
-- State Scholarships
-- National Schemes
-- Application Deadlines
-
-*Filter content by your interests!* 🔍
-            """
-            self.bot.send_message(message.chat.id, categories_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['technology'])
-        def tech_stack(message):
-            tech_text = """
-🛠️ *Technology Stack* 🛠️
-
-💻 *Programming Language:*
-• Python 3.11
-• Modern syntax
-• High performance
-
-🤖 *Bot Framework:*
-• pyTelegramBotAPI
-• Async support
-• Media handling
-• *Inline query support*
-
-🌐 *Web Scraping:*
-• BeautifulSoup4
-• Requests library
-• Custom selectors
-
-🗄️ *Database:*
-• SQLite3
-• Lightweight
-• Reliable
-
-☁️ *Hosting:*
-• Render.com
-• 24/7 Uptime
-• Auto-scaling
-
-📦 *Version Control:*
-• GitHub
-• CI/CD pipelines
-• Automated testing
-
-*Built with cutting-edge technology!* 🔥
-            """
-            self.bot.send_message(message.chat.id, tech_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['team'])
-        def team_info(message):
-            team_text = """
-👥 *Development Team* 👥
-
-🦸‍♂️ *Lead Developer:*
-• *Name:* Suman Kumar Soren
-• *Role:* Full Stack Developer
-• *Expertise:* Python, APIs, Automation
-• *Education:* B.Tech Computer Science
-• *Experience:* 3+ Years
-• *Location:* Bihar, India
-
-🌐 *Projects Portfolio:*
-• 10+ Telegram Bots
-• 5+ Web Applications
-• Education Technology Focus
-
-🏆 *Achievements:*
-• 1000+ Active Users
-• 99.9% Uptime Maintenance
-• Zero Data Breaches
-• *Inline Query Implementation*
-
-📞 *Contact Developer:*
-• Email: suman@bihareducation.com
-• Telegram: @sumankumarsoren
-
-*Dedicated to educational excellence!* 📚
-            """
-            self.bot.send_message(message.chat.id, team_text, parse_mode='Markdown')
-
-        # ==================== ADMIN COMMANDS ====================
-        @self.bot.message_handler(commands=['check'])
-        def manual_check(message):
-            if self.is_admin(message):
-                self.bot.send_message(message.chat.id, "🔄 Manual update check initiated...")
-                self.bot.send_chat_action(message.chat.id, 'typing')
-                
-                stats = self.check_and_post_updates()
-                response_text = f"""
-✅ *Manual Check Complete*
-
-📊 *Results:*
-• Websites Scanned: {len(self.scraper.load_websites())}
-• New Updates Found: {stats}
-• Successful Posts: {stats}
-• Failed Attempts: 0
-
-⏰ *Next Auto-check:* 30 minutes
-🔄 *Status:* All systems normal
-
-*Check completed successfully!* 🎯
-                """
-                self.bot.send_message(message.chat.id, response_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['status'])
-        def system_status(message):
-            if self.is_admin(message):
-                status_text = """
-🖥️ *System Status Dashboard* 🖥️
-
-✅ *Bot Status:* ONLINE
-🌐 *Web Server:* RUNNING
-📡 *Scraper:* ACTIVE
-💾 *Database:* CONNECTED
-💡 *Inline Mode:* ENABLED
-
-📊 *Performance Metrics:*
-• Uptime: 99.9%
-• Response Time: <1s
-• Error Rate: 0.1%
-• Success Rate: 99.8%
-
-🔧 *Recent Activities:*
-• Last Update: 5 min ago
-• Posts Today: 42
-• Users Served: 156
-• Inline Queries: Active
-
-⚡ *System Health:* EXCELLENT
-🎯 *Recommendations:* No issues detected
-
-*All systems operational!* 🚀
-                """
-                self.bot.send_message(message.chat.id, status_text, parse_mode='Markdown')
-
-        @self.bot.message_handler(commands=['maintenance'])
-        def maintenance(message):
-            if self.is_admin(message):
-                maintenance_text = """
-🔧 *Maintenance Mode Activated*
-
-⚠️ *Bot Services:* TEMPORARILY OFFLINE
-📅 *Expected Recovery:* 30 minutes
-🔄 *Status:* Maintenance in progress
-
-*Thank you for your patience!* 🙏
-                """
-                self.bot.send_message(Config.CHANNEL_ID, maintenance_text, parse_mode='Markdown')
-
-        # ==================== INLINE QUERY HANDLER ====================
-        @self.bot.inline_handler(lambda query: True)
-        def handle_inline_query(inline_query):
-            try:
-                query = inline_query.query.lower()
-                results = []
-                
-                # Latest Updates
-                if not query or 'latest' in query or 'update' in query:
-                    results.append(
-                        types.InlineQueryResultArticle(
-                            id='1',
-                            title='📢 Latest Education Updates',
-                            description='Get recent updates from Bihar education websites',
-                            input_message_content=types.InputTextMessageContent(
-                                message_text="🎓 *Latest Education Updates*\n\n"
-                                            "Here are the recent updates from Bihar education sector:\n"
-                                            "• BSEB Intermediate Results declared\n"
-                                            "• Patna University Admission started\n"
-                                            "• BPSC Teacher Recruitment notification\n"
-                                            "• Scholarship applications open\n\n"
-                                            "🔔 *Stay updated with @BiharEducationIN*",
-                                parse_mode='Markdown'
-                            ),
-                            thumb_url='https://img.icons8.com/color/96/000000/education.png',
-                            reply_markup=types.InlineKeyboardMarkup().add(
-                                types.InlineKeyboardButton("Join Channel", url="https://t.me/BiharEducationIN")
-                            )
-                        )
-                    )
-                
-                # Exam Results
-                if not query or 'result' in query or 'exam' in query or 'pariksha' in query:
-                    results.append(
-                        types.InlineQueryResultArticle(
-                            id='2',
-                            title='📊 Exam Results',
-                            description='Check latest exam results and merit lists',
-                            input_message_content=types.InputTextMessageContent(
-                                message_text="📊 *Exam Results Available*\n\n"
-                                            "Latest results declared:\n"
-                                            "• BSEB Matric Results 2024\n"
-                                            "• Intermediate Science Results\n"
-                                            "• BPSC Prelims Results\n"
-                                            "• University Semester Results\n\n"
-                                            "📱 Check: @BiharEducationIN",
-                                parse_mode='Markdown'
-                            ),
-                            thumb_url='https://img.icons8.com/color/96/000000/exam.png',
-                            reply_markup=types.InlineKeyboardMarkup().add(
-                                types.InlineKeyboardButton("View Results", url="https://t.me/BiharEducationIN")
-                            )
-                        )
-                    )
-                
-                # Admissions
-                if not query or 'admission' in query or 'form' in query or 'admit' in query:
-                    results.append(
-                        types.InlineQueryResultArticle(
-                            id='3',
-                            title='🎫 Admissions Open',
-                            description='Current admission notifications and forms',
-                            input_message_content=types.InputTextMessageContent(
-                                message_text="🎫 *Admissions Open*\n\n"
-                                            "Ongoing admissions:\n"
-                                            "• Patna University PG Courses\n"
-                                            "• Engineering College Admissions\n"
-                                            "• Medical Entrance Applications\n"
-                                            "• Scholarship Programs\n\n"
-                                            "⏰ Apply before deadlines!",
-                                parse_mode='Markdown'
-                            ),
-                            thumb_url='https://img.icons8.com/color/96/000000/student-registration.png',
-                            reply_markup=types.InlineKeyboardMarkup().add(
-                                types.InlineKeyboardButton("Apply Now", url="https://t.me/BiharEducationIN")
-                            )
-                        )
-                    )
-                
-                # Jobs
-                if not query or 'job' in query or 'vacancy' in query or 'naukri' in query:
-                    results.append(
-                        types.InlineQueryResultArticle(
-                            id='4',
-                            title='💼 Government Jobs',
-                            description='Latest government job notifications',
-                            input_message_content=types.InputTextMessageContent(
-                                message_text="💼 *Government Jobs Update*\n\n"
-                                            "Current vacancies:\n"
-                                            "• BPSC 2024 Recruitment\n"
-                                            "• Teacher Vacancies\n"
-                                            "• Bank Jobs\n"
-                                            "• SSC Notifications\n\n"
-                                            "📋 Eligibility and apply details available",
-                                parse_mode='Markdown'
-                            ),
-                            thumb_url='https://img.icons8.com/color/96/000000/job.png',
-                            reply_markup=types.InlineKeyboardMarkup().add(
-                                types.InlineKeyboardButton("View Jobs", url="https://t.me/BiharEducationIN")
-                            )
-                        )
-                    )
-                
-                # Scholarships
-                if not query or 'scholarship' in query or 'fund' in query or 'scholarship' in query:
-                    results.append(
-                        types.InlineQueryResultArticle(
-                            id='5',
-                            title='💰 Scholarships',
-                            description='Available scholarship programs',
-                            input_message_content=types.InputTextMessageContent(
-                                message_text="💰 *Scholarship Opportunities*\n\n"
-                                            "Open scholarship programs:\n"
-                                            "• State Merit Scholarship\n"
-                                            "• Minority Scholarships\n"
-                                            "• SC/ST Scholarships\n"
-                                            "• Post-Matric Scholarships\n\n"
-                                            "🎓 Financial support for students",
-                                parse_mode='Markdown'
-                            ),
-                            thumb_url='https://img.icons8.com/color/96/000000/scholarship.png',
-                            reply_markup=types.InlineKeyboardMarkup().add(
-                                types.InlineKeyboardButton("Apply Scholarship", url="https://t.me/BiharEducationIN")
-                            )
-                        )
-                    )
-                
-                # Contact Info
-                if not query or 'contact' in query or 'help' in query or 'sahayata' in query:
-                    results.append(
-                        types.InlineQueryResultArticle(
-                            id='6',
-                            title='📞 Contact Support',
-                            description='Get help and support information',
-                            input_message_content=types.InputTextMessageContent(
-                                message_text="📞 *Contact Bihar Education Support*\n\n"
-                                            "• Email: support@bihareducation.com\n"
-                                            "• Telegram: @BiharEducationSupport\n"
-                                            "• Website: bihareducation.com\n"
-                                            "• Response Time: 24 hours\n\n"
-                                            "🛠️ We're here to help you!",
-                                parse_mode='Markdown'
-                            ),
-                            thumb_url='https://img.icons8.com/color/96/000000/customer-support.png',
-                            reply_markup=types.InlineKeyboardMarkup().add(
-                                types.InlineKeyboardButton("Get Help", url="https://t.me/BiharEducationSupport")
-                            )
-                        )
-                    )
-                
-                # Bot Info
-                if not query or 'bot' in query or 'about' in query or 'information' in query:
-                    results.append(
-                        types.InlineQueryResultArticle(
-                            id='7',
-                            title='🤖 About This Bot',
-                            description='Information about Bihar Education Bot',
-                            input_message_content=types.InputTextMessageContent(
-                                message_text="🤖 *Bihar Education Bot*\n\n"
-                                            "• Automated education updates\n"
-                                            "• 25+ websites monitored\n"
-                                            "• Real-time notifications\n"
-                                            "• 100% free service\n"
-                                            "• Inline query support\n\n"
-                                            "🎯 Features: Exam results, admissions, jobs, scholarships\n"
-                                            "📱 Channel: @BiharEducationIN",
-                                parse_mode='Markdown'
-                            ),
-                            thumb_url='https://img.icons8.com/color/96/000000/robot.png',
-                            reply_markup=types.InlineKeyboardMarkup().add(
-                                types.InlineKeyboardButton("Start Bot", url="https://t.me/BiharEducationBot")
-                            )
-                        )
-                    )
-                
-                # Answer the inline query
-                self.bot.answer_inline_query(inline_query.id, results, cache_time=1, is_personal=True)
-                
-            except Exception as e:
-                logger.error(f"Inline query error: {e}")
-
-    def is_admin(self, message):
-        return (str(message.chat.id) in Config.ADMIN_IDS or 
-                message.from_user.username in Config.ADMIN_IDS)
-
-    def get_stats(self):
-        conn = self.db.get_connection()
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM websites")
-        website_count = c.fetchone()[0]
-        c.execute("SELECT COUNT(*) FROM updates")
-        update_count = c.fetchone()[0]
-        c.execute("SELECT COUNT(*) FROM updates WHERE posted = 1")
-        posted_count = c.fetchone()[0]
-        conn.close()
-        
-        return f"""
-📊 *Bot Statistics*
-
-🌐 Websites Monitored: {website_count}
-📝 Total Updates Found: {update_count}
-✅ Updates Posted: {posted_count}
-🔄 Check Interval: Every 30 minutes
-💡 Inline Queries: Enabled
-
-Bot is running smoothly! 🚀
-        """
-
-    def send_admin_menu(self, chat_id):
-        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
-        markup.add('🔄 Check Now', '📊 Statistics', '🌐 Websites List')
-        self.bot.send_message(
-            chat_id,
-            "👨‍💻 *Admin Panel*\n\nManage Bihar Education Updates Bot",
-            parse_mode='Markdown',
-            reply_markup=markup
-        )
-
-    def format_update_message(self, update):
-        category_emoji = {
-            'Board': '🎓', 'University': '🏫', 'Results': '📊',
-            'Recruitment': '💼', 'Scholarship': '💰', 'Govt Portal': '🏛️',
-            'Job Alerts': '💼', 'Education Blog': '📚'
-        }
-        
-        emoji = category_emoji.get(update['category'], '📢')
-        
-        message = f"""
-{emoji} *{update['website']}* - {update['category']}
-
-📢 *{update['title']}*
-📅 *Date:* {update['date']}
-
-🔗 *Link:* {update['link']}
-
-#BiharEducation #{update['category']} #{update['website'].replace(' ', '').replace('(', '').replace(')', '')}
-        """
-        return message.strip()
-
-    def check_and_post_updates(self):
-        logger.info("Starting update check...")
-        try:
-            updates = self.scraper.check_for_new_updates()
-            new_posts = 0
+        """टेलीग्राम कमांड्स और बटन्स के लिए हैंडलर्स सेट करता है।"""
+        @self.bot.message_handler(commands=['start', 'help'])
+        def send_welcome(message):
+            welcome_text = "नमस्ते! 🙏\nबिहार एजुकेशन बॉट में आपका स्वागत है।\n\nकृपया नीचे दिए गए विकल्पों में से एक चुनें:"
+            self.bot.send_message(message.chat.id, welcome_text, reply_markup=self._main_menu_keyboard())
+
+        @self.bot.callback_query_handler(func=lambda call: True)
+        def handle_callback_query(call):
+            """सभी बटन क्लिक्स को हैंडल करता है।"""
+            self.bot.answer_callback_query(call.id) # क्लिक का जवाब देना
             
-            for update in updates:
-                # Check if this update was already posted
-                conn = self.db.get_connection()
-                c = conn.cursor()
-                c.execute("SELECT id FROM updates WHERE title = ? AND website = ?", 
-                         (update['title'], update['website']))
-                existing = c.fetchone()
-                
-                if not existing:
-                    # New update found
-                    message = self.format_update_message(update)
-                    
-                    try:
-                        self.bot.send_message(
-                            Config.CHANNEL_ID,
-                            message,
-                            parse_mode='Markdown',
-                            disable_web_page_preview=False
-                        )
-                        
-                        # Save to database
-                        c.execute('''INSERT INTO updates 
-                                   (website_id, title, link, date, posted, post_time)
-                                   VALUES (?, ?, ?, ?, 1, ?)''',
-                                   (1, update['title'], update['link'], update['date'], datetime.now()))
-                        conn.commit()
-                        
-                        logger.info(f"Posted new update: {update['title'][:50]}...")
-                        new_posts += 1
-                        time.sleep(2)
-                        
-                    except Exception as e:
-                        logger.error(f"Error posting update: {e}")
-                        # Save as not posted
-                        c.execute('''INSERT INTO updates 
-                                   (website_id, title, link, date, posted)
-                                   VALUES (?, ?, ?, ?, 0)''',
-                                   (1, update['title'], update['link'], update['date']))
-                        conn.commit()
-                
-                conn.close()
+            # मुख्य मेनू के विकल्प
+            if call.data == 'menu_govt_jobs':
+                self.bot.edit_message_text("सरकारी नौकरी श्रेणी चुनें:", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=self._govt_jobs_keyboard())
             
-            logger.info(f"Update check completed. Posted {new_posts} new updates.")
-            return new_posts
-                    
-        except Exception as e:
-            logger.error(f"Update check failed: {e}")
-            return 0
+            elif call.data == 'menu_university_info':
+                self.bot.edit_message_text("यूनिवर्सिटी चुनें:", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=self._university_info_keyboard())
+
+            elif call.data == 'menu_study_material':
+                self.bot.edit_message_text("स्टडी मटेरियल का प्रकार चुनें:", chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=self._study_material_keyboard())
+
+            elif call.data == 'menu_daily_quiz':
+                self.bot.edit_message_text("डेली क्विज़ की सुविधा जल्द ही शुरू होगी!", chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+            # सब-मेनू के विकल्प
+            elif call.data.startswith('jobs_'):
+                job_type = call.data.split('_')[1].upper()
+                self.bot.edit_message_text(f"आपने {job_type} नौकरियां चुनी हैं। अपडेट्स जल्द ही यहाँ मिलेंगे।", chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+            elif call.data.startswith('uni_'):
+                uni_name = call.data.split('_')[1].upper()
+                self.bot.edit_message_text(f"{uni_name} की जानकारी जल्द ही यहाँ उपलब्ध होगी।", chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+            elif call.data.startswith('study_'):
+                material_type = call.data.split('_')[1].capitalize()
+                self.bot.edit_message_text(f"{material_type} जल्द ही यहाँ अपलोड किए जाएंगे।", chat_id=call.message.chat.id, message_id=call.message.message_id)
+
+            # वापस जाने का बटन
+            elif call.data == 'back_to_main':
+                welcome_text = "मुख्य मेनू पर वापस आ गए।\n\nकृपया नीचे दिए गए विकल्पों में से एक चुनें:"
+                self.bot.edit_message_text(welcome_text, chat_id=call.message.chat.id, message_id=call.message.message_id, reply_markup=self._main_menu_keyboard())
+
+    # --- शेड्यूलर के फंक्शन्स ---
+    def send_daily_update(self):
+        """दैनिक अपडेट भेजने का लॉजिक यहाँ आएगा।"""
+        print("📰 दैनिक अपडेट भेजा जा रहा है...")
 
     def run_scheduler(self):
-        logger.info("Scheduler started (30 minute intervals)")
+        """शेड्यूलर को चलाता है।"""
+        schedule.every().day.at("08:00").do(self.send_daily_update)
         while True:
-            try:
-                self.check_and_post_updates()
-                logger.info(f"Next check in 30 minutes...")
-                time.sleep(Config.CHECK_INTERVAL)
-            except Exception as e:
-                logger.error(f"Scheduler error: {e}")
-                time.sleep(300)
+            schedule.run_pending()
+            time.sleep(1)
+
