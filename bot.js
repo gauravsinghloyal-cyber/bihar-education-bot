@@ -757,6 +757,183 @@ For queries, use /feedback command.
 `;
 
     bot.sendMessage(chatId, helpMsg, {parse_mode: 'Markdown'});
+});// HELP COMMAND
+bot.onText(/\/help/, (msg) => {
+    const chatId = msg.chat.id;
+    const helpMsg = `
+ℹ️ *Bihar Education Bot - Help*
+
+*Available Commands:*
+/start - 🏠 Start the bot
+/jobs - 💼 View latest jobs
+/universities - 🎓 University list
+/subscribe - 🔔 Subscribe to alerts
+/profile - 👤 View your profile
+/help - ℹ️ Get help
+/about - ℹ️ About the bot
+/feedback - 💬 Send feedback
+
+*Features:*
+• Real-time job notifications
+• Auto-scraping from official sites
+• Save your favorite jobs
+• Get personalized alerts
+
+*Support:*
+For queries, use /feedback command.
+`;
+
+    bot.sendMessage(chatId, helpMsg, {parse_mode: 'Markdown'});
+});
+
+// ===== ADMIN PANEL COMMANDS =====
+
+// ADMIN MENU
+bot.onText(/\/admin/, (msg) => {
+    const chatId = msg.chat.id;
+    
+    if (!isAdmin(msg.from.id)) {
+        bot.sendMessage(chatId, '❌ Admin access required!');
+        return;
+    }
+    
+    const adminMenu = {
+        inline_keyboard: [
+            [{text: '📊 View All Jobs', callback_data: 'admin_viewjobs'}],
+            [{text: '🔄 Manual Scrape', callback_data: 'admin_scrape'}],
+            [{text: '📈 Statistics', callback_data: 'admin_stats'}],
+            [{text: '🔗 Test Links', callback_data: 'admin_testlinks'}]
+        ]
+    };
+    
+    bot.sendMessage(chatId, `🔐 *Admin Panel*\n\nWelcome ${msg.from.first_name}!\n\n📊 Jobs: ${biharJobs.length}\n👥 Users: ${users.size}\n🔔 Subscribers: ${subscribers.size}\n\nSelect option:`, {
+        parse_mode: 'Markdown',
+        reply_markup: adminMenu
+    });
+});
+
+// VIEW ALL JOBS
+bot.onText(/\/viewjobs/, (msg) => {
+    const chatId = msg.chat.id;
+    if (!isAdmin(msg.from.id)) {
+        bot.sendMessage(chatId, '❌ Admin only!');
+        return;
+    }
+    if (biharJobs.length === 0) {
+        bot.sendMessage(chatId, '❌ No jobs!');
+        return;
+    }
+    showJobsPage(chatId, 0, 5);
+});
+
+function showJobsPage(chatId, page, perPage) {
+    const start = page * perPage;
+    const end = start + perPage;
+    const jobsToShow = biharJobs.slice(start, end);
+    const totalPages = Math.ceil(biharJobs.length / perPage);
+    
+    let msg = `📋 *Jobs (Page ${page + 1}/${totalPages})*\n\nTotal: ${biharJobs.length}\n\n`;
+    const buttons = [];
+    
+    jobsToShow.forEach((job, index) => {
+        const globalIndex = start + index;
+        msg += `${globalIndex + 1}. ${job.shortTitle}\n   ${job.organization} | ${job.category}\n\n`;
+        buttons.push([
+            {text: `✏️ Edit #${globalIndex + 1}`, callback_data: `admin_edit_${job.id}`},
+            {text: `🗑️ Del #${globalIndex + 1}`, callback_data: `admin_delete_${job.id}`}
+        ]);
+    });
+    
+    const navButtons = [];
+    if (page > 0) navButtons.push({text: '◀️', callback_data: `admin_page_${page - 1}`});
+    navButtons.push({text: `${page + 1}/${totalPages}`, callback_data: 'noop'});
+    if (page < totalPages - 1) navButtons.push({text: '▶️', callback_data: `admin_page_${page + 1}`});
+    
+    if (navButtons.length > 0) buttons.push(navButtons);
+    buttons.push([{text: '🏠 Menu', callback_data: 'admin_menu'}]);
+    
+    bot.sendMessage(chatId, msg, {parse_mode: 'Markdown', reply_markup: {inline_keyboard: buttons}});
+}
+
+function showJobEditMenu(chatId, job) {
+    bot.sendMessage(chatId, `✏️ *Edit Job*\n\n📋 ${job.title}\n🏢 ${job.organization}\n👥 ${job.posts}\n📅 ${job.lastDate}\n\nEdit feature coming soon!`, {
+        parse_mode: 'Markdown',
+        reply_markup: {inline_keyboard: [[{text: '⬅️ Back', callback_data: 'admin_viewjobs'}]]}
+    });
+}
+
+// STATS COMMAND
+bot.onText(/\/stats/, (msg) => {
+    const chatId = msg.chat.id;
+    if (!isAdmin(msg.from.id)) {
+        bot.sendMessage(chatId, '❌ Admin only!');
+        return;
+    }
+    
+    const categories = [...new Set(biharJobs.map(j => j.category))];
+    const catStats = categories.map(cat => `• ${cat}: ${biharJobs.filter(j => j.category === cat).length}`).join('\n');
+    
+    bot.sendMessage(chatId, `📊 *Statistics*\n\n👥 Users: ${users.size}\n🔔 Subscribers: ${subscribers.size}\n💼 Jobs: ${biharJobs.length}\n🎓 Unis: ${biharUniversities.length}\n\n*By Category:*\n${catStats}\n\n⚙️ Uptime: ${Math.floor(process.uptime()/60)}m`, {parse_mode: 'Markdown'});
+});
+
+// SCRAPE COMMAND  
+bot.onText(/\/scrape/, async (msg) => {
+    const chatId = msg.chat.id;
+    if (!isAdmin(msg.from.id)) {
+        bot.sendMessage(chatId, '❌ Admin only!');
+        return;
+    }
+    
+    const loadMsg = await bot.sendMessage(chatId, '🔄 Scraping... Please wait...');
+    
+    try {
+        const newJobs = await checkForNewJobs();
+        
+        if (newJobs.length > 0) {
+            bot.editMessageText(`✅ Found ${newJobs.length} new jobs!\n\nTotal: ${biharJobs.length}`, {
+                chat_id: chatId,
+                message_id: loadMsg.message_id
+            });
+            setTimeout(() => showLatestJobs(chatId), 2000);
+        } else {
+            bot.editMessageText('✅ No new jobs. Database up to date!', {
+                chat_id: chatId,
+                message_id: loadMsg.message_id
+            });
+        }
+    } catch (error) {
+        bot.editMessageText(`❌ Error: ${error.message}`, {
+            chat_id: chatId,
+            message_id: loadMsg.message_id
+        });
+    }
+});
+
+// TEST LINKS
+bot.onText(/\/testlinks/, async (msg) => {
+    const chatId = msg.chat.id;
+    if (!isAdmin(msg.from.id)) {
+        bot.sendMessage(chatId, '❌ Admin only!');
+        return;
+    }
+    
+    bot.sendMessage(chatId, '🔍 Testing websites...');
+    
+    const sites = [
+        {name: 'BPSC', url: 'https://www.bpsc.bih.nic.in/'},
+        {name: 'BSSC', url: 'https://www.bssc.bihar.gov.in/'},
+        {name: 'CSBC', url: 'https://csbc.bih.nic.in/'}
+    ];
+    
+    for (const site of sites) {
+        try {
+            const response = await axios.get(site.url, {timeout: 10000});
+            bot.sendMessage(chatId, `✅ ${site.name}\nStatus: ${response.status}`);
+        } catch (error) {
+            bot.sendMessage(chatId, `❌ ${site.name}\nError: ${error.message}`);
+        }
+        await new Promise(r => setTimeout(r, 1500));
+    }
 });
 
 // JOBS COMMAND
@@ -939,7 +1116,69 @@ bot.onText(/\/scrape/, async (msg) => {
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const data = query.data;
-    const userId = query.from.id;
+    const userId = query.from.id;    // Admin callbacks
+    if (data === 'admin_menu') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        bot.sendMessage(chatId, '/admin');
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data === 'admin_viewjobs') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showJobsPage(chatId, 0, 5);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data.startsWith('admin_page_')) {
+        const page = parseInt(data.replace('admin_page_', ''));
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showJobsPage(chatId, page, 5);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data.startsWith('admin_edit_')) {
+        const jobId = data.replace('admin_edit_', '');
+        const job = biharJobs.find(j => j.id == jobId);
+        if (job) {
+            bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+            showJobEditMenu(chatId, job);
+        }
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data.startsWith('admin_delete_')) {
+        const jobId = data.replace('admin_delete_', '');
+        const index = biharJobs.findIndex(j => j.id == jobId);
+        if (index !== -1) {
+            const deleted = biharJobs[index];
+            biharJobs.splice(index, 1);
+            jobDatabase.delete(jobId);
+            bot.answerCallbackQuery(query.id, {text: '✅ Deleted!', show_alert: true});
+            bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+            bot.sendMessage(chatId, `✅ Deleted: ${deleted.shortTitle}`);
+            setTimeout(() => showJobsPage(chatId, 0, 5), 1500);
+        }
+        return;
+    }
+    
+    if (data === 'admin_scrape') {
+        bot.answerCallbackQuery(query.id, {text: '🔄 Starting...'});
+        bot.sendMessage(chatId, '/scrape');
+        return;
+    }
+    
+    if (data === 'admin_stats') {
+        bot.answerCallbackQuery(query.id);
+        bot.sendMessage(chatId, '/stats');
+        return;
+    }
+    
+    if (data === 'admin_testlinks') {
+        bot.answerCallbackQuery(query.id);
+        bot.sendMessage(chatId, '/testlinks');
+        return;
+    }
+
 
     // View job
     if (data.startsWith('view_job_')) {
