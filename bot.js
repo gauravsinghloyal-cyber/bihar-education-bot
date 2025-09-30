@@ -26,6 +26,233 @@ let lastUniversityUpdates = new Map();
 let resultDatabase = new Map();
 let admitCardDatabase = new Map();
 
+// ===== RESULTS DATABASE =====
+const biharResults = [
+    {
+        id: 'res001',
+        title: 'BPSSC ASI Steno Marks 2025 - Out',
+        organization: 'BPSSC',
+        category: 'Result',
+        examDate: '25 Sept 2025',
+        resultDate: '30 Sept 2025',
+        resultLink: 'https://www.bpssc.bih.nic.in/',
+        shortTitle: 'BPSSC ASI Steno Marks'
+    },
+    {
+        id: 'res002',
+        title: 'SSC Selection Phase 13 Answer Key 2025 - Out',
+        organization: 'SSC',
+        category: 'Answer Key',
+        examDate: '20 Sept 2025',
+        resultDate: '28 Sept 2025',
+        resultLink: 'https://ssc.nic.in/',
+        shortTitle: 'SSC Phase 13 Answer Key'
+    },
+    {
+        id: 'res003',
+        title: 'Bihar Police CSBC Constable Result 2025 - Out',
+        organization: 'CSBC',
+        category: 'Result',
+        examDate: '15 Sept 2025',
+        resultDate: '29 Sept 2025',
+        resultLink: 'https://csbc.bih.nic.in/',
+        shortTitle: 'Bihar Police CSBC Result'
+    },
+    {
+        id: 'res004',
+        title: 'IBPS PO MT XV 15 Pre Result 2025 - Out',
+        organization: 'IBPS',
+        category: 'Result',
+        examDate: '18 Sept 2025',
+        resultDate: '27 Sept 2025',
+        resultLink: 'https://www.ibps.in/',
+        shortTitle: 'IBPS PO Pre Result'
+    },
+    {
+        id: 'res005',
+        title: 'Bihar Vidhan Sabha Security Guard 02/2023 Final Result 2025 - Out',
+        organization: 'Bihar Vidhan Sabha',
+        category: 'Result',
+        examDate: '12 Sept 2025',
+        resultDate: '25 Sept 2025',
+        resultLink: 'https://vidhansabha.bih.nic.in/',
+        shortTitle: 'Vidhan Sabha Security Result'
+    },
+    {
+        id: 'res006',
+        title: 'UCO Bank SO Final Result 2025 - Out',
+        organization: 'UCO Bank',
+        category: 'Result',
+        examDate: '08 Sept 2025',
+        resultDate: '24 Sept 2025',
+        resultLink: 'https://www.ucobank.com/',
+        shortTitle: 'UCO Bank SO Result'
+    },
+    {
+        id: 'res007',
+        title: 'BPSSC Bihar Police Enforcement SI Pre Result 2025 - Out',
+        organization: 'BPSSC',
+        category: 'Result',
+        examDate: '01 Sept 2025',
+        resultDate: '22 Sept 2025',
+        resultLink: 'https://www.bpssc.bih.nic.in/',
+        shortTitle: 'Bihar Police SI Result'
+    },
+    {
+        id: 'res008',
+        title: 'PFRDA Assistant Manager Phase-I Result 2025 - Out',
+        organization: 'PFRDA',
+        category: 'Result',
+        examDate: '28 Aug 2025',
+        resultDate: '20 Sept 2025',
+        resultLink: 'https://www.pfrda.org.in/',
+        shortTitle: 'PFRDA Manager Result'
+    }
+];
+
+// ===== ADMIT CARDS DATABASE =====
+const biharAdmitCards = [
+    {
+        id: 'adm001',
+        title: 'Chandigarh SSA JBT Primary Teacher Admit Card 2025 - Out',
+        organization: 'Chandigarh SSA',
+        category: 'Teaching',
+        examDate: '05 Oct 2025',
+        releaseDate: '30 Sept 2025',
+        admitLink: 'https://sseachd.gov.in/',
+        shortTitle: 'Chandigarh JBT Admit Card'
+    },
+    {
+        id: 'adm002',
+        title: 'DSSSB 01-31 October Exam Admit Card 2025 - Out',
+        organization: 'DSSSB',
+        category: 'Multiple',
+        examDate: '01-31 Oct 2025',
+        releaseDate: '29 Sept 2025',
+        admitLink: 'https://dsssb.delhi.gov.in/',
+        shortTitle: 'DSSSB October Exam Admit'
+    },
+    {
+        id: 'adm003',
+        title: 'SIDBI Bank Grade A, B Phase-II Admit Card 2025 - Out',
+        organization: 'SIDBI',
+        category: 'Banking',
+        examDate: '10 Oct 2025',
+        releaseDate: '28 Sept 2025',
+        admitLink: 'https://www.sidbi.in/',
+        shortTitle: 'SIDBI Grade A/B Admit'
+    },
+    {
+        id: 'adm004',
+        title: 'IB Security Assistant/ Executive Admit Card 2025 - Out',
+        organization: 'IB',
+        category: 'Security',
+        examDate: '12 Oct 2025',
+        releaseDate: '27 Sept 2025',
+        admitLink: 'https://mha.gov.in/',
+        shortTitle: 'IB Security Admit Card'
+    },
+    {
+        id: 'adm005',
+        title: 'LIC AAO / AE Pre Admit Card 2025 - Out',
+        organization: 'LIC',
+        category: 'Insurance',
+        examDate: '15 Oct 2025',
+        releaseDate: '26 Sept 2025',
+        admitLink: 'https://www.licindia.in/',
+        shortTitle: 'LIC AAO Pre Admit'
+    },
+    {
+        id: 'adm006',
+        title: 'RPSC Assistant Engineer Pre Admit Card 2025 - Out',
+        organization: 'RPSC',
+        category: 'Engineering',
+        examDate: '18 Oct 2025',
+        releaseDate: '25 Sept 2025',
+        admitLink: 'https://rpsc.rajasthan.gov.in/',
+        shortTitle: 'RPSC AE Admit Card'
+    },
+    {
+        id: 'adm007',
+        title: 'IBPS Clerk CSA XV Pre Admit Card 2025 - Out',
+        organization: 'IBPS',
+        category: 'Banking',
+        examDate: '20 Oct 2025',
+        releaseDate: '23 Sept 2025',
+        admitLink: 'https://www.ibps.in/',
+        shortTitle: 'IBPS Clerk Admit Card'
+    },
+    {
+        id: 'adm008',
+        title: 'Railway RRB Group D Application Status 2025',
+        organization: 'RRB',
+        category: 'Railway',
+        examDate: '25 Oct 2025',
+        releaseDate: '22 Sept 2025',
+        admitLink: 'https://rrbapply.gov.in/',
+        shortTitle: 'RRB Group D Status'
+    }
+];
+
+// ===== TRENDING JOBS =====
+const trendingJobs = [
+    {
+        id: 'trend001',
+        title: 'Bihar Police Constable Form (4128 Posts)',
+        organization: 'CSBC Bihar',
+        posts: 4128,
+        category: 'Police',
+        lastDate: '15 Oct 2025',
+        applyLink: 'https://csbc.bih.nic.in/',
+        isFeatured: true
+    },
+    {
+        id: 'trend002',
+        title: 'BSSC Graduate Level Combined (15,230 Posts)',
+        organization: 'BSSC',
+        posts: 15230,
+        category: 'SSC',
+        lastDate: '20 Oct 2025',
+        applyLink: 'https://www.bssc.bihar.gov.in/',
+        isFeatured: true
+    },
+    {
+        id: 'trend003',
+        title: 'SSC CPO SI Online Form (2861 Posts)',
+        organization: 'SSC',
+        posts: 2861,
+        category: 'Police',
+        lastDate: '18 Oct 2025',
+        applyLink: 'https://ssc.nic.in/',
+        isFeatured: true
+    },
+    {
+        id: 'trend004',
+        title: 'RRB NTPC Graduate Level (35,208 Posts)',
+        organization: 'Railway',
+        posts: 35208,
+        category: 'Railway',
+        lastDate: '25 Oct 2025',
+        applyLink: 'https://rrbapply.gov.in/',
+        isFeatured: true
+    },
+    {
+        id: 'trend005',
+        title: 'BPSC 70th CCE Prelims (2041 Posts)',
+        organization: 'BPSC',
+        posts: 2041,
+        category: 'Civil Services',
+        lastDate: '12 Oct 2025',
+        applyLink: 'https://www.bpsc.bih.nic.in/',
+        isFeatured: true
+    }
+];
+
+// ===== HELPER FUNCTIONS =====
+function getJobById(jobId) {
+    return [...trendingJobs, ...biharJobs].find(job => job.id === jobId);
+}
+
 // ===== HELPER FUNCTIONS =====
 function isAdmin(userId) {
     return ADMIN_IDS.includes(userId.toString());
@@ -677,58 +904,266 @@ ${job.description || 'Check notification for complete details.'}
 `;
 }
 
+// ===== WEB SCRAPING FUNCTIONS =====
+
+async function scrapeFreeJobAlert() {
+    try {
+        console.log('🔍 Scraping FreeJobAlert.com...');
+        const response = await axios.get('https://www.freejobalert.com/', {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            },
+            timeout: 10000
+        });
+        
+        const $ = cheerio.load(response.data);
+        const scrapedJobs = [];
+        const scrapedAdmits = [];
+        const scrapedResults = [];
+        
+        // Scrape Job Notifications
+        $('a').each((i, elem) => {
+            const text = $(elem).text().trim();
+            const link = $(elem).attr('href');
+            
+            if (text.includes('Online Form') && link && scrapedJobs.length < 15) {
+                const postMatch = text.match(/(\d+)\s/);
+                const posts = postMatch ? parseInt(postMatch[1]) : 100;
+                
+                scrapedJobs.push({
+                    id: `job_${Date.now()}_${i}`,
+                    title: text.replace(/Online Form.*/, '').trim(),
+                    shortTitle: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+                    organization: extractOrganization(text),
+                    posts: posts,
+                    category: 'Government',
+                    qualification: 'As per notification',
+                    lastDate: 'Check notification',
+                    applyLink: link.startsWith('http') ? link : `https://www.freejobalert.com${link}`,
+                    postedDate: new Date().toISOString().split('T')[0]
+                });
+            }
+            
+            // Scrape Admit Cards
+            if (text.includes('Admit Card') && link && scrapedAdmits.length < 10) {
+                scrapedAdmits.push({
+                    id: `admit_${Date.now()}_${i}`,
+                    title: text,
+                    shortTitle: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+                    organization: extractOrganization(text),
+                    category: 'Government',
+                    examDate: 'Check notification',
+                    releaseDate: new Date().toISOString().split('T')[0],
+                    admitLink: link.startsWith('http') ? link : `https://www.freejobalert.com${link}`
+                });
+            }
+            
+            // Scrape Results
+            if (text.includes('Result') && link && scrapedResults.length < 10) {
+                scrapedResults.push({
+                    id: `result_${Date.now()}_${i}`,
+                    title: text,
+                    shortTitle: text.substring(0, 50) + (text.length > 50 ? '...' : ''),
+                    organization: extractOrganization(text),
+                    category: 'Government',
+                    examDate: 'As per notification',
+                    resultDate: new Date().toISOString().split('T')[0],
+                    resultLink: link.startsWith('http') ? link : `https://www.freejobalert.com${link}`
+                });
+            }
+        });
+        
+        console.log(`✅ Scraped: ${scrapedJobs.length} jobs, ${scrapedAdmits.length} admits, ${scrapedResults.length} results`);
+        
+        return {
+            jobs: scrapedJobs,
+            admits: scrapedAdmits,
+            results: scrapedResults
+        };
+        
+    } catch (error) {
+        console.error('❌ Scraping error:', error.message);
+        return { jobs: [], admits: [], results: [] };
+    }
+}
+
+function extractOrganization(text) {
+    const orgs = ['RRB', 'SSC', 'UPSC', 'BPSC', 'DSSSB', 'Railway', 'Police', 'Army', 'Navy', 'Air Force', 'Bank', 'IBPS', 'SBI', 'EMRS', 'BEL', 'DDA', 'MPESB', 'WBBPE', 'CSBC'];
+    for (const org of orgs) {
+        if (text.toUpperCase().includes(org)) return org;
+    }
+    return 'Government of India';
+}
+
+// Auto-update jobs from FreeJobAlert
+async function autoUpdateJobs() {
+    console.log('🔄 Auto-updating jobs from FreeJobAlert.com...');
+    const scraped = await scrapeFreeJobAlert();
+    
+    let updatedCount = 0;
+    
+    if (scraped.jobs.length > 0) {
+        // Add new jobs to existing database
+        scraped.jobs.forEach(job => {
+            const exists = biharJobs.find(j => j.title === job.title);
+            if (!exists) {
+                biharJobs.push(job);
+                updatedCount++;
+            }
+        });
+        
+        // Keep only latest 25 jobs
+        if (biharJobs.length > 25) {
+            biharJobs.splice(0, biharJobs.length - 25);
+        }
+        
+        console.log(`✅ Added ${updatedCount} new jobs. Total jobs: ${biharJobs.length}`);
+        
+        // Notify subscribers about new jobs
+        if (updatedCount > 0) {
+            const notificationMsg = `🔥 *${updatedCount} New Job(s) Added!*\n\n📌 Check latest updates:\n/jobs - View all jobs\n\n💡 Stay updated with Bihar Education Bot!`;
+            notifySubscribers(notificationMsg);
+        }
+    }
+    
+    if (scraped.admits.length > 0) {
+        scraped.admits.forEach(admit => {
+            const exists = biharAdmitCards.find(a => a.title === admit.title);
+            if (!exists && biharAdmitCards.length < 15) {
+                biharAdmitCards.push(admit);
+            }
+        });
+        console.log(`✅ Admit cards updated. Total: ${biharAdmitCards.length}`);
+    }
+    
+    if (scraped.results.length > 0) {
+        scraped.results.forEach(result => {
+            const exists = biharResults.find(r => r.title === result.title);
+            if (!exists && biharResults.length < 15) {
+                biharResults.push(result);
+            }
+        });
+        console.log(`✅ Results updated. Total: ${biharResults.length}`);
+    }
+}
+
+function notifySubscribers(message) {
+    let notified = 0;
+    subscribers.forEach((value, chatId) => {
+        bot.sendMessage(chatId, message, { parse_mode: 'Markdown' })
+            .then(() => notified++)
+            .catch(() => {});
+    });
+    console.log(`📢 Notified ${notified} subscribers`);
+}
+
+// Schedule auto-update every 6 hours (at 00:00, 06:00, 12:00, 18:00)
+cron.schedule('0 */6 * * *', () => {
+    console.log('⏰ Scheduled job update triggered...');
+    autoUpdateJobs();
+});
+
+// Initial scrape on bot start (after 10 seconds)
+setTimeout(() => {
+    console.log('🚀 Initial data fetch from FreeJobAlert.com...');
+    autoUpdateJobs();
+}, 10000);
+
+console.log('✅ Auto-scraper initialized! Updates every 6 hours.');
+
+
 // ===== COMMAND HANDLERS =====
 
-// START COMMAND
+// START COMMAND (UPDATED WITH NEW FEATURES)
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const firstName = msg.from.first_name || 'User';
+    const userId = msg.from.id;
+    const username = msg.from.first_name;
     
-    // Register user if not exists
     if (!users.has(chatId)) {
         users.set(chatId, {
             id: chatId,
             username: msg.from.username || 'N/A',
-            firstName: firstName,
+            firstName: username,
             joinedAt: new Date()
         });
-        console.log(`✅ New user registered: ${firstName} (${chatId})`);
+        console.log(`✅ New user registered: ${username} (${chatId})`);
     }
     
-    const welcomeMsg = `🏛️ *बिहार सरकारी नौकरी एवं शिक्षा बॉट v6.0*
-
-नमस्कार ${firstName}! 🙏
-
-✨ *Features:*
-🔹 25+ Latest Government Jobs
-🔹 40+ Bihar Universities Info  
-🔹 Free Study Materials
-🔹 Real-time Job Alerts (Every 2 Hours)
-🔹 Exam Reminders
-🔹 Result Notifications
-🔹 Auto Scraping from Official Sites
-
-📩 *Subscribe for alerts:* /subscribe
-👤 *Register:* /register
-
-नीचे से option चुनें:`;
-
     const keyboard = {
         keyboard: [
-            [{text: '🏛️ सरकारी नौकरी'}, {text: '🎓 विश्वविद्यालय'}],
-            [{text: '📝 परीक्षा अपडेट'}, {text: '📊 रिजल्ट'}],
-            [{text: '📚 स्टडी मेटेरियल'}, {text: '👤 प्रोफाइल'}],
-            [{text: '🔔 Subscribe'}, {text: 'ℹ️ मदद'}]
+            ['🔥 ट्रेंडिंग जॉब्स', '🏛️ सरकारी नौकरी'],
+            ['📊 रिजल्ट', '🎫 एडमिट कार्ड'],
+            ['🎓 विश्वविद्यालय', '👤 प्रोफाइल'],
+            ['🔔 सब्सक्राइब', 'ℹ️ हेल्प']
         ],
         resize_keyboard: true,
         one_time_keyboard: false
     };
+    
+    const welcomeMsg = `
+🙏 *नमस्कार ${username}!*
 
+*बिहार एजुकेशन बॉट में आपका स्वागत है!* 🎓
+
+📱 *यहाँ आपको मिलेगी:*
+🔥 ट्रेंडिंग जॉब्स (35,000+ पोस्ट)
+🏛️ 10+ सरकारी नौकरियां
+📊 8+ लेटेस्ट रिजल्ट्स
+🎫 8+ एडमिट कार्ड
+🎓 17 यूनिवर्सिटीज
+
+💡 *नीचे के बटन दबाएं या कमांड टाइप करें!*
+
+📌 *Commands:*
+/jobs - नौकरियां देखें
+/results - रिजल्ट देखें
+/admitcards - एडमिट कार्ड
+/trending - ट्रेंडिंग जॉब्स
+/universities - यूनिवर्सिटीज
+`;
+    
     bot.sendMessage(chatId, welcomeMsg, {
         parse_mode: 'Markdown',
         reply_markup: keyboard
     });
 });
+
+// HANDLE KEYBOARD BUTTONS
+bot.on('message', (msg) => {
+    const chatId = msg.chat.id;
+    const text = msg.text;
+    
+    if (!text || text.startsWith('/')) return;
+    
+    switch(text) {
+        case '🔥 ट्रेंडिंग जॉब्स':
+            showTrendingJobs(chatId);
+            break;
+        case '🏛️ सरकारी नौकरी':
+            showLatestJobs(chatId);
+            break;
+        case '📊 रिजल्ट':
+            showResults(chatId, 0);
+            break;
+        case '🎫 एडमिट कार्ड':
+            showAdmitCards(chatId, 0);
+            break;
+        case '🎓 विश्वविद्यालय':
+            showUniversities(chatId);
+            break;
+        case '👤 प्रोफाइल':
+            showUserProfile(chatId, msg.from.id);
+            break;
+        case '🔔 सब्सक्राइब':
+            handleSubscription(chatId, msg.from.id);
+            break;
+        case 'ℹ️ हेल्प':
+            bot.sendMessage(chatId, '/help');
+            break;
+    }
+});
+
 
 // HELP COMMAND
 bot.onText(/\/help/, (msg) => {
@@ -958,6 +1393,125 @@ ${statusEmoji} *Status:* ${statusText}
 ${!isUserAdmin ? '💡 *Want admin access?*\nSend your User ID to the bot administrator.' : '✅ You have full admin access to all bot features!'}
 `, {parse_mode: 'Markdown'});
 });
+
+
+// ===== RESULTS COMMAND =====
+bot.onText(/\/results/, async (msg) => {
+    const chatId = msg.chat.id;
+    showResults(chatId, 0);
+});
+
+function showResults(chatId, page) {
+    const perPage = 5;
+    const start = page * perPage;
+    const end = start + perPage;
+    const resultsToShow = biharResults.slice(start, end);
+    const totalPages = Math.ceil(biharResults.length / perPage);
+    
+    let msg = `📊 *Latest Results (Page ${page + 1}/${totalPages})*\n\n`;
+    msg += `Total Results: ${biharResults.length}\n\n`;
+    
+    const buttons = [];
+    
+    resultsToShow.forEach((result, index) => {
+        const globalIndex = start + index;
+        msg += `${globalIndex + 1}. *${result.shortTitle}*\n`;
+        msg += `   📅 Result Date: ${result.resultDate}\n`;
+        msg += `   🏢 ${result.organization}\n\n`;
+        
+        buttons.push([
+            {text: `📄 View ${globalIndex + 1}`, callback_data: `view_result_${result.id}`}
+        ]);
+    });
+    
+    const navButtons = [];
+    if (page > 0) navButtons.push({text: '◀️', callback_data: `results_page_${page - 1}`});
+    navButtons.push({text: `${page + 1}/${totalPages}`, callback_data: 'noop'});
+    if (page < totalPages - 1) navButtons.push({text: '▶️', callback_data: `results_page_${page + 1}`});
+    
+    if (navButtons.length > 0) buttons.push(navButtons);
+    buttons.push([{text: '🏠 Main Menu', callback_data: 'back_to_start'}]);
+    
+    bot.sendMessage(chatId, msg, {
+        parse_mode: 'Markdown',
+        reply_markup: {inline_keyboard: buttons}
+    });
+}
+
+// ===== ADMIT CARDS COMMAND =====
+bot.onText(/\/admitcards/, async (msg) => {
+    const chatId = msg.chat.id;
+    showAdmitCards(chatId, 0);
+});
+
+function showAdmitCards(chatId, page) {
+    const perPage = 5;
+    const start = page * perPage;
+    const end = start + perPage;
+    const admitsToShow = biharAdmitCards.slice(start, end);
+    const totalPages = Math.ceil(biharAdmitCards.length / perPage);
+    
+    let msg = `🎫 *Latest Admit Cards (Page ${page + 1}/${totalPages})*\n\n`;
+    msg += `Total Admit Cards: ${biharAdmitCards.length}\n\n`;
+    
+    const buttons = [];
+    
+    admitsToShow.forEach((admit, index) => {
+        const globalIndex = start + index;
+        msg += `${globalIndex + 1}. *${admit.shortTitle}*\n`;
+        msg += `   📅 Exam Date: ${admit.examDate}\n`;
+        msg += `   🏢 ${admit.organization}\n\n`;
+        
+        buttons.push([
+            {text: `🎫 Download ${globalIndex + 1}`, callback_data: `view_admit_${admit.id}`}
+        ]);
+    });
+    
+    const navButtons = [];
+    if (page > 0) navButtons.push({text: '◀️', callback_data: `admits_page_${page - 1}`});
+    navButtons.push({text: `${page + 1}/${totalPages}`, callback_data: 'noop'});
+    if (page < totalPages - 1) navButtons.push({text: '▶️', callback_data: `admits_page_${page + 1}`});
+    
+    if (navButtons.length > 0) buttons.push(navButtons);
+    buttons.push([{text: '🏠 Main Menu', callback_data: 'back_to_start'}]);
+    
+    bot.sendMessage(chatId, msg, {
+        parse_mode: 'Markdown',
+        reply_markup: {inline_keyboard: buttons}
+    });
+}
+
+// ===== TRENDING JOBS COMMAND =====
+bot.onText(/\/trending/, async (msg) => {
+    const chatId = msg.chat.id;
+    showTrendingJobs(chatId);
+});
+
+function showTrendingJobs(chatId) {
+    let msg = `🔥 *Trending Jobs - Featured*\n\n`;
+    msg += `Top ${trendingJobs.length} Most Demanded Jobs:\n\n`;
+    
+    const buttons = [];
+    
+    trendingJobs.forEach((job, index) => {
+        msg += `${index + 1}. *${job.title}*\n`;
+        msg += `   👥 Posts: ${job.posts.toLocaleString()}\n`;
+        msg += `   📅 Last Date: ${job.lastDate}\n`;
+        msg += `   🏢 ${job.organization}\n\n`;
+        
+        buttons.push([
+            {text: `🔥 Apply for ${job.posts.toLocaleString()} Posts`, callback_data: `view_trending_${job.id}`}
+        ]);
+    });
+    
+    buttons.push([{text: '🏠 Main Menu', callback_data: 'back_to_start'}]);
+    
+    bot.sendMessage(chatId, msg, {
+        parse_mode: 'Markdown',
+        reply_markup: {inline_keyboard: buttons}
+    });
+}
+
 
 
 // JOBS COMMAND
@@ -1329,7 +1883,140 @@ bot.on('callback_query', async (query) => {
             });
             bot.sendMessage(chatId, msg, {parse_mode: 'Markdown'});
         }
-        
+            
+    // ===== NEW FEATURE CALLBACKS =====
+    
+    // Results pagination
+    if (data.startsWith('results_page_')) {
+        const page = parseInt(data.replace('results_page_', ''));
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showResults(chatId, page);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // View result details
+    if (data.startsWith('view_result_')) {
+        const resultId = data.replace('view_result_', '');
+        const result = biharResults.find(r => r.id === resultId);
+        if (result) {
+            const detailMsg = `
+📊 *${result.title}*
+
+🏢 *Organization:* ${result.organization}
+📂 *Category:* ${result.category}
+📅 *Exam Date:* ${result.examDate}
+🎯 *Result Date:* ${result.resultDate}
+
+🔗 *View Result:* ${result.resultLink}
+
+💡 Click the link to view your result!
+`;
+            bot.sendMessage(chatId, detailMsg, {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{text: '🔗 Open Result Link', url: result.resultLink}],
+                        [{text: '⬅️ Back to Results', callback_data: 'back_to_results'}]
+                    ]
+                }
+            });
+        }
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // Admit cards pagination
+    if (data.startsWith('admits_page_')) {
+        const page = parseInt(data.replace('admits_page_', ''));
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showAdmitCards(chatId, page);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // View admit card details
+    if (data.startsWith('view_admit_')) {
+        const admitId = data.replace('view_admit_', '');
+        const admit = biharAdmitCards.find(a => a.id === admitId);
+        if (admit) {
+            const detailMsg = `
+🎫 *${admit.title}*
+
+🏢 *Organization:* ${admit.organization}
+📂 *Category:* ${admit.category}
+📅 *Exam Date:* ${admit.examDate}
+🔖 *Released:* ${admit.releaseDate}
+
+🔗 *Download Admit Card:* ${admit.admitLink}
+
+💡 Click the link to download your admit card!
+`;
+            bot.sendMessage(chatId, detailMsg, {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{text: '🎫 Download Admit Card', url: admit.admitLink}],
+                        [{text: '⬅️ Back to Admit Cards', callback_data: 'back_to_admits'}]
+                    ]
+                }
+            });
+        }
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // View trending job
+    if (data.startsWith('view_trending_')) {
+        const trendId = data.replace('view_trending_', '');
+        const job = trendingJobs.find(j => j.id === trendId);
+        if (job) {
+            const detailMsg = `
+🔥 *${job.title}*
+
+🏢 *Organization:* ${job.organization}
+👥 *Total Posts:* ${job.posts.toLocaleString()}
+📂 *Category:* ${job.category}
+📅 *Last Date:* ${job.lastDate}
+
+🔗 *Apply Link:* ${job.applyLink}
+
+💡 This is one of the most demanded jobs! Apply now!
+`;
+            bot.sendMessage(chatId, detailMsg, {
+                parse_mode: 'Markdown',
+                reply_markup: {
+                    inline_keyboard: [
+                        [{text: '🔥 Apply Now', url: job.applyLink}],
+                        [{text: '⬅️ Back to Trending', callback_data: 'back_to_trending'}]
+                    ]
+                }
+            });
+        }
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // Back buttons
+    if (data === 'back_to_results') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showResults(chatId, 0);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data === 'back_to_admits') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showAdmitCards(chatId, 0);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data === 'back_to_trending') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showTrendingJobs(chatId);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data === 'back_to_start') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        bot.sendMessage(chatId, '/start');
+        return bot.answerCallbackQuery(query.id);
+    }
+
         bot.answerCallbackQuery(query.id);
     }
 });
