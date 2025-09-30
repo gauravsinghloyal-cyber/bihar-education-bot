@@ -1,20 +1,5 @@
-# Python
-venv/
+node_modules/
 .env
-*.pyc
-__pycache__/
 *.log
-*.db
 .DS_Store
-lxml/
-lxml*
-
-# Build files
-*.so
-*.egg-info/
-build/
-dist/
-
-# IDE
-.vscode/
-.idea/
+npm-debug.log*
