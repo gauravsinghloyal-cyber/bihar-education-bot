@@ -321,15 +321,17 @@ cron.schedule('0 */2 * * *', async () => {
                 await new Promise(r => setTimeout(r, 3000));
             }
             // Notify subscribers
-            const summaryMsg = `🔔 **${newJobs.length} New Jobs Posted!**\n\nCategories:\n${[...new Set(newJobs.map(j => j.category))].map(cat => `• ${cat}: ${newJobs.filter(j => j.category === cat).length} jobs`).join('\n')}`;
+
             subscribers.forEach((data, chatId) => {
-                if (data.alerts) bot.sendMessage(chatId, summaryMsg, { parse_mode: 'Markdown' });
+                if (data.alerts) bot.sendMessage(chatId, `🔔 **${newJobs.length} New Jobs Posted!**\n\nCategories:\n${[...new Set(newJobs.map(j => j.category))].map(cat => `• ${cat}: ${newJobs.filter(j => j.category === cat).length} jobs`).join('\n')}`, { parse_mode: 'Markdown' });
             });
         } else {
             console.log('ℹ️ No new jobs found.');
         }
     } catch (error) {
-        console.error('❌ Scraper error
+        console.error('❌ Scraper error:', error.message);
+    }
+});
 // ===== CALLBACK QUERY HANDLER =====
 bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
@@ -457,4 +459,6 @@ bot.on('callback_query', async (query) => {
                 msg += `${i + 1}. **${u.name}**\n   📍 ${u.location}\n   🔗 ${u.website}\n\n`;
             });
             bot.sendMessage(chatId, msg, { parse_mode: 'Markdown' });
-        } else if (category
+                } // Add more category handlers here if needed
+            }
+        });
