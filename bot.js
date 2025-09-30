@@ -111,7 +111,7 @@ const biharResults = [
 ];
 
 // ===== ADMIT CARDS DATABASE =====
-const biharAdmitCards = [
+        const biharAdmitCards = [
     {
         id: 'adm001',
         title: 'Chandigarh SSA JBT Primary Teacher Admit Card 2025 - Out',
@@ -1797,6 +1797,7 @@ bot.on('callback_query', async (query) => {
             });
         }
         bot.answerCallbackQuery(query.id);
+  
     // ===== QUICK NAVIGATION CALLBACKS =====
     if (data === 'view_latest_jobs') {
         bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
@@ -1853,32 +1854,27 @@ bot.on('callback_query', async (query) => {
     }
 
     // Job navigation
-    if (data.startsWith('job_next_') || data.startsWith('job_prev_')) {
-        const currentIndex = currentJobView.get(chatId) || 0;
-        let newIndex = data.startsWith('job_next_') ? currentIndex + 1 : currentIndex - 1;
-        
-        if (newIndex < 0) newIndex = biharJobs.length - 1;
-        if (newIndex >= biharJobs.length) newIndex = 0;
-    if (data === 'search_jobs') {
-    userStates.set(chatId, 'awaiting_search');
-    bot.sendMessage(chatId, '🔍 *Search Jobs*\n\nType job name, organization, or category:\n\n*Examples:*\n- Railway\n- SSC\n- Banking\n- Police\n- Teacher\n- UPSC', {parse_mode: 'Markdown'});
-    return bot.answerCallbackQuery(query.id);
-}  // ← ADD THIS CLOSING BRACKET
+if (data.startsWith('job_next_') || data.startsWith('job_prev_')) {
+    const currentIndex = currentJobView.get(chatId) || 0;
+    let newIndex = data.startsWith('job_next_') ? currentIndex + 1 : currentIndex - 1;
+    
+    if (newIndex < 0) newIndex = biharJobs.length - 1;
+    if (newIndex >= biharJobs.length) newIndex = 0;
 
-        const job = biharJobs[newIndex];
-        const jobCard = createJobCard(job, chatId);
-        currentJobView.set(chatId, newIndex);
-        
-        bot.editMessageText(jobCard.message, {
-            chat_id: chatId,
-            message_id: query.message.message_id,
-            reply_markup: jobCard.keyboard,
-            parse_mode: 'Markdown'
-        });
-        
-        bot.answerCallbackQuery(query.id);
-        return;
-    }
+    const job = biharJobs[newIndex];
+    const jobCard = createJobCard(job, chatId);
+    currentJobView.set(chatId, newIndex);
+    
+    bot.editMessageText(jobCard.message, {
+        chat_id: chatId,
+        message_id: query.message.message_id,
+        reply_markup: jobCard.keyboard,
+        parse_mode: 'Markdown'
+    });
+    
+    bot.answerCallbackQuery(query.id);
+    return;
+}
 
     // Job details
     if (data.startsWith('details_')) {
@@ -2094,8 +2090,7 @@ bot.on('callback_query', async (query) => {
     }
 
     bot.answerCallbackQuery(query.id);
-}
-
+});
 // ===== KEYBOARD BUTTON HANDLERS =====
 bot.on('message', function (msg) {
         const text = msg.text;
@@ -2218,3 +2213,9 @@ bot.on('polling_error', (error) => {
 console.log('🚀 Bihar Education Bot v6.0 initialized!');
 console.log(`🔑 Admin IDs: ${ADMIN_IDS.join(', ') || 'None configured'}`);
 console.log(`📢 Channel: ${CHANNEL_ID}`);
+function showJobEditMenu(chatId, job) {
+    bot.sendMessage(chatId, `✏️ *Edit Job*\n\n📋 ${job.title}\n🏢 ${job.organization}\n👥 ${job.posts}\n📅 ${job.lastDate}\n\nEdit feature coming soon!`, {
+        parse_mode: 'Markdown',
+        reply_markup: {inline_keyboard: [[{text: '⬅️ Back', callback_data: 'admin_viewjobs'}]]}
+    });
+}
