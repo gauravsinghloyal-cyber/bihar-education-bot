@@ -602,7 +602,7 @@ async function scrapeWebsite(site) {
                 'Connection': 'keep-alive'
             }
         });
-        
+
         const $ = cheerio.load(response.data);
         const notifications = [];
         
@@ -1161,7 +1161,49 @@ bot.on('message', (msg) => {
         case 'ℹ️ हेल्प':
             bot.sendMessage(chatId, '/help');
             break;
+    }    
+    // ===== HANDLE SEARCH QUERIES =====
+    if (userStates.get(chatId) === 'awaiting_search') {
+        const searchTerm = text.toLowerCase();
+        userStates.delete(chatId);
+        
+        const results = biharJobs.filter(job => 
+            job.title.toLowerCase().includes(searchTerm) ||
+            job.organization.toLowerCase().includes(searchTerm) ||
+            job.category.toLowerCase().includes(searchTerm)
+        );
+        
+        if (results.length === 0) {
+            return bot.sendMessage(chatId, `❌ No jobs found for "*${searchTerm}*"\n\nTry different keywords like:\n- Railway\n- SSC\n- Banking\n- Police\n- Teacher`, {parse_mode: 'Markdown'});
+        }
+        
+        let searchMsg = `🔍 *Search Results for "${searchTerm}"*\n\n`;
+        searchMsg += `Found *${results.length}* jobs:\n\n`;
+        
+        results.slice(0, 10).forEach((job, index) => {
+            searchMsg += `${index + 1}. *${job.shortTitle}*\n`;
+            searchMsg += `👥 ${job.posts} Posts | 🏢 ${job.organization}\n`;
+            searchMsg += `📅 Last Date: ${job.lastDate}\n`;
+            searchMsg += `🔗 [Apply Here](${job.applyLink})\n\n`;
+        });
+        
+        if (results.length > 10) {
+            searchMsg += `\n_Showing top 10 of ${results.length} results_`;
+        }
+        
+        return bot.sendMessage(chatId, searchMsg, {
+            parse_mode: 'Markdown',
+            disable_web_page_preview: true,
+            reply_markup: {
+                inline_keyboard: [
+                    [{text: '🔍 Search Again', callback_data: 'search_jobs'}],
+                    [{text: '📋 All Jobs', callback_data: 'view_latest_jobs'}],
+                    [{text: '🏠 Menu', callback_data: 'back_to_start'}]
+                ]
+            }
+        });
     }
+
 });
 
 
@@ -1396,90 +1438,65 @@ ${!isUserAdmin ? '💡 *Want admin access?*\nSend your User ID to the bot admini
 
 
 // ===== RESULTS COMMAND =====
-bot.onText(/\/results/, async (msg) => {
-    const chatId = msg.chat.id;
-    showResults(chatId, 0);
-});
-
-function showResults(chatId, page) {
-    const perPage = 5;
-    const start = page * perPage;
-    const end = start + perPage;
-    const resultsToShow = biharResults.slice(start, end);
-    const totalPages = Math.ceil(biharResults.length / perPage);
+function showResults(chatId, page = 0) {
+    if (biharResults.length === 0) {
+        return bot.sendMessage(chatId, '❌ No results available at the moment. Please check back later!');
+    }
     
-    let msg = `📊 *Latest Results (Page ${page + 1}/${totalPages})*\n\n`;
-    msg += `Total Results: ${biharResults.length}\n\n`;
+    let msg = `📊 *LATEST RESULTS*\n\n`;
+    msg += `🔔 Total Results Available: *${biharResults.length}*\n\n`;
     
-    const buttons = [];
-    
-    resultsToShow.forEach((result, index) => {
-        const globalIndex = start + index;
-        msg += `${globalIndex + 1}. *${result.shortTitle}*\n`;
-        msg += `   📅 Result Date: ${result.resultDate}\n`;
-        msg += `   🏢 ${result.organization}\n\n`;
-        
-        buttons.push([
-            {text: `📄 View ${globalIndex + 1}`, callback_data: `view_result_${result.id}`}
-        ]);
+    biharResults.forEach((result, index) => {
+        msg += `${index + 1}. [${result.title}](${result.resultLink})\n\n`;
     });
     
-    const navButtons = [];
-    if (page > 0) navButtons.push({text: '◀️', callback_data: `results_page_${page - 1}`});
-    navButtons.push({text: `${page + 1}/${totalPages}`, callback_data: 'noop'});
-    if (page < totalPages - 1) navButtons.push({text: '▶️', callback_data: `results_page_${page + 1}`});
-    
-    if (navButtons.length > 0) buttons.push(navButtons);
-    buttons.push([{text: '🏠 Main Menu', callback_data: 'back_to_start'}]);
+    msg += `\n💡 *Tap on any result to view details*`;
     
     bot.sendMessage(chatId, msg, {
         parse_mode: 'Markdown',
-        reply_markup: {inline_keyboard: buttons}
+        disable_web_page_preview: true,
+        reply_markup: {
+            inline_keyboard: [
+                [{text: '📋 Latest Jobs', callback_data: 'view_latest_jobs'}],
+                [{text: '🎫 Admit Cards', callback_data: 'view_admit_cards'}],
+                [{text: '🔥 Trending Jobs', callback_data: 'view_trending'}],
+                [{text: '🔄 Refresh', callback_data: 'refresh_results'}, {text: '🏠 Menu', callback_data: 'back_to_start'}]
+            ]
+        }
     });
 }
+
+
 
 // ===== ADMIT CARDS COMMAND =====
-bot.onText(/\/admitcards/, async (msg) => {
-    const chatId = msg.chat.id;
-    showAdmitCards(chatId, 0);
-});
-
-function showAdmitCards(chatId, page) {
-    const perPage = 5;
-    const start = page * perPage;
-    const end = start + perPage;
-    const admitsToShow = biharAdmitCards.slice(start, end);
-    const totalPages = Math.ceil(biharAdmitCards.length / perPage);
+function showAdmitCards(chatId, page = 0) {
+    if (biharAdmitCards.length === 0) {
+        return bot.sendMessage(chatId, '❌ No admit cards available at the moment. Please check back later!');
+    }
     
-    let msg = `🎫 *Latest Admit Cards (Page ${page + 1}/${totalPages})*\n\n`;
-    msg += `Total Admit Cards: ${biharAdmitCards.length}\n\n`;
+    let msg = `🎫 *LATEST ADMIT CARDS*\n\n`;
+    msg += `🔔 Total Admit Cards: *${biharAdmitCards.length}*\n\n`;
     
-    const buttons = [];
-    
-    admitsToShow.forEach((admit, index) => {
-        const globalIndex = start + index;
-        msg += `${globalIndex + 1}. *${admit.shortTitle}*\n`;
-        msg += `   📅 Exam Date: ${admit.examDate}\n`;
-        msg += `   🏢 ${admit.organization}\n\n`;
-        
-        buttons.push([
-            {text: `🎫 Download ${globalIndex + 1}`, callback_data: `view_admit_${admit.id}`}
-        ]);
+    biharAdmitCards.forEach((admit, index) => {
+        msg += `${index + 1}. [${admit.title}](${admit.admitLink})\n\n`;
     });
     
-    const navButtons = [];
-    if (page > 0) navButtons.push({text: '◀️', callback_data: `admits_page_${page - 1}`});
-    navButtons.push({text: `${page + 1}/${totalPages}`, callback_data: 'noop'});
-    if (page < totalPages - 1) navButtons.push({text: '▶️', callback_data: `admits_page_${page + 1}`});
-    
-    if (navButtons.length > 0) buttons.push(navButtons);
-    buttons.push([{text: '🏠 Main Menu', callback_data: 'back_to_start'}]);
+    msg += `\n💡 *Tap on any admit card to download*`;
     
     bot.sendMessage(chatId, msg, {
         parse_mode: 'Markdown',
-        reply_markup: {inline_keyboard: buttons}
+        disable_web_page_preview: true,
+        reply_markup: {
+            inline_keyboard: [
+                [{text: '📋 Latest Jobs', callback_data: 'view_latest_jobs'}],
+                [{text: '📊 Latest Results', callback_data: 'view_results'}],
+                [{text: '🔥 Trending Jobs', callback_data: 'view_trending'}],
+                [{text: '🔄 Refresh', callback_data: 'refresh_admits'}, {text: '🏠 Menu', callback_data: 'back_to_start'}]
+            ]
+        }
     });
 }
+
 
 // ===== TRENDING JOBS COMMAND =====
 bot.onText(/\/trending/, async (msg) => {
@@ -1780,6 +1797,59 @@ bot.on('callback_query', async (query) => {
             });
         }
         bot.answerCallbackQuery(query.id);
+    // ===== QUICK NAVIGATION CALLBACKS =====
+    if (data === 'view_latest_jobs') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showLatestJobs(chatId);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data === 'view_results') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showResults(chatId, 0);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data === 'view_admit_cards') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showAdmitCards(chatId, 0);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    if (data === 'view_trending') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showTrendingJobs(chatId);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // ===== REFRESH CALLBACKS =====
+    if (data === 'refresh_jobs') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showLatestJobs(chatId);
+        return bot.answerCallbackQuery(query.id, {text: '🔄 Jobs refreshed!'});
+    }
+    
+    if (data === 'refresh_results') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showResults(chatId, 0);
+        return bot.answerCallbackQuery(query.id, {text: '🔄 Results refreshed!'});
+    }
+    
+    if (data === 'refresh_admits') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
+        showAdmitCards(chatId, 0);
+        return bot.answerCallbackQuery(query.id, {text: '🔄 Admit cards refreshed!'});
+    }
+    
+    // ===== SEARCH FEATURE =====
+    if (data === 'search_jobs') {
+        userStates.set(chatId, 'awaiting_search');
+        bot.sendMessage(chatId, '🔍 *Search Jobs*\n\nType job name, organization, or category:\n\n*Examples:*\n- Railway\n- SSC\n- Banking\n- Police\n- Teacher\n- UPSC', {parse_mode: 'Markdown'});
+        return bot.answerCallbackQuery(query.id);
+    }
+
+    if (data === 'back_to_start') {
+        bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
     }
 
     // Job navigation
@@ -1802,7 +1872,7 @@ bot.on('callback_query', async (query) => {
         });
         
         bot.answerCallbackQuery(query.id);
-    }
+    });
 
     // Job details
     if (data.startsWith('details_')) {
@@ -2017,77 +2087,76 @@ bot.on('callback_query', async (query) => {
         return bot.answerCallbackQuery(query.id);
     }
 
-        bot.answerCallbackQuery(query.id);
-    }
-});
+    bot.answerCallbackQuery(query.id);
+}
 
 // ===== KEYBOARD BUTTON HANDLERS =====
-bot.on('message', (msg) => {
-    const text = msg.text;
-    const chatId = msg.chat.id;
-    
-    // Handle feedback state
-    if (userStates.get(chatId) === 'awaiting_feedback') {
-        ADMIN_IDS.forEach(adminId => {
-            bot.sendMessage(adminId, `📩 *New Feedback from User ${chatId}:*\n\n${text}`, {
-                parse_mode: 'Markdown'
+bot.on('message', function (msg) {
+        const text = msg.text;
+        const chatId = msg.chat.id;
+
+        // Handle feedback state
+        if (userStates.get(chatId) === 'awaiting_feedback') {
+            ADMIN_IDS.forEach(adminId => {
+                bot.sendMessage(adminId, `📩 *New Feedback from User ${chatId}:*\n\n${text}`, {
+                    parse_mode: 'Markdown'
+                });
             });
-        });
-        
-        bot.sendMessage(chatId, '✅ Thank you for your feedback! We will review it soon.');
-        userStates.delete(chatId);
-        return;
-    }
-    
-    // Skip if command
-    if (!text || text.startsWith('/')) return;
-    
-    // Handle keyboard buttons
-    if (text === '🏛️ सरकारी नौकरी') {
-        showLatestJobs(chatId);
-    }
-    
-    if (text === '🎓 विश्वविद्यालय') {
-        const univKeyboard = {
-            inline_keyboard: [
-                [{text: '🏛️ State Universities', callback_data: 'univ_state'}],
-                [{text: '📋 All Universities', callback_data: 'univ_all'}]
-            ]
-        };
-        bot.sendMessage(chatId, '🎓 *Select University Category:*', {
-            parse_mode: 'Markdown',
-            reply_markup: univKeyboard
-        });
-    }
-    
-    if (text === '📝 परीक्षा अपडेट') {
-        bot.sendMessage(chatId, '📝 *Upcoming Exams & Admit Cards*\n\nFeature coming soon!', {parse_mode: 'Markdown'});
-    }
-    
-    if (text === '📊 रिजल्ट') {
-        bot.sendMessage(chatId, '📊 *Latest Results*\n\nFeature coming soon!', {parse_mode: 'Markdown'});
-    }
-    
-    if (text === '📚 स्टडी मेटेरियल') {
-        bot.sendMessage(chatId, '📚 *Study Materials*\n\nFeature coming soon!', {parse_mode: 'Markdown'});
-    }
-    
-    if (text === '👤 प्रोफाइल') {
-        const profile = userProfiles.get(chatId) || {savedJobs: []};
-        const subscription = subscribers.has(chatId) ? '✅ Active' : '❌ Inactive';
-        
-        const profileMsg = `👤 *Your Profile*\n\n🆔 User ID: ${chatId}\n💾 Saved Jobs: ${profile.savedJobs.length}\n🔔 Subscription: ${subscription}`;
-        bot.sendMessage(chatId, profileMsg, {parse_mode: 'Markdown'});
-    }
-    
-    if (text === '🔔 Subscribe') {
-        bot.sendMessage(chatId, 'Use /subscribe command to enable alerts!');
-    }
-    
-    if (text === 'ℹ️ मदद') {
-        bot.sendMessage(chatId, 'Use /help command for assistance!');
-    }
-});
+
+            bot.sendMessage(chatId, '✅ Thank you for your feedback! We will review it soon.');
+            userStates.delete(chatId);
+            return;
+        }
+
+        // Skip if command
+        if (!text || text.startsWith('/')) return;
+
+        // Handle keyboard buttons
+        if (text === '🏛️ सरकारी नौकरी') {
+            showLatestJobs(chatId);
+        }
+
+        if (text === '🎓 विश्वविद्यालय') {
+            const univKeyboard = {
+                inline_keyboard: [
+                    [{ text: '🏛️ State Universities', callback_data: 'univ_state' }],
+                    [{ text: '📋 All Universities', callback_data: 'univ_all' }]
+                ]
+            };
+            bot.sendMessage(chatId, '🎓 *Select University Category:*', {
+                parse_mode: 'Markdown',
+                reply_markup: univKeyboard
+            });
+        }
+
+        if (text === '📝 परीक्षा अपडेट') {
+            bot.sendMessage(chatId, '📝 *Upcoming Exams & Admit Cards*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
+        }
+
+        if (text === '📊 रिजल्ट') {
+            bot.sendMessage(chatId, '📊 *Latest Results*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
+        }
+
+        if (text === '📚 स्टडी मेटेरियल') {
+            bot.sendMessage(chatId, '📚 *Study Materials*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
+        }
+
+        if (text === '👤 प्रोफाइल') {
+            const profile = userProfiles.get(chatId) || { savedJobs: [] };
+            const subscription = subscribers.has(chatId) ? '✅ Active' : '❌ Inactive';
+
+            const profileMsg = `👤 *Your Profile*\n\n🆔 User ID: ${chatId}\n💾 Saved Jobs: ${profile.savedJobs.length}\n🔔 Subscription: ${subscription}`;
+            bot.sendMessage(chatId, profileMsg, { parse_mode: 'Markdown' });
+        }
+
+        if (text === '🔔 Subscribe') {
+            bot.sendMessage(chatId, 'Use /subscribe command to enable alerts!');
+        }
+
+        if (text === 'ℹ️ मदद') {
+            bot.sendMessage(chatId, 'Use /help command for assistance!');
+        }
+    });
 
 // ===== EXPRESS SERVER =====
 app.get('/', (req, res) => {
