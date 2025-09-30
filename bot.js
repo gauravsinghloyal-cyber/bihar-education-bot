@@ -1859,7 +1859,12 @@ bot.on('callback_query', async (query) => {
         
         if (newIndex < 0) newIndex = biharJobs.length - 1;
         if (newIndex >= biharJobs.length) newIndex = 0;
-        
+    if (data === 'search_jobs') {
+    userStates.set(chatId, 'awaiting_search');
+    bot.sendMessage(chatId, '🔍 *Search Jobs*\n\nType job name, organization, or category:\n\n*Examples:*\n- Railway\n- SSC\n- Banking\n- Police\n- Teacher\n- UPSC', {parse_mode: 'Markdown'});
+    return bot.answerCallbackQuery(query.id);
+}  // ← ADD THIS CLOSING BRACKET
+
         const job = biharJobs[newIndex];
         const jobCard = createJobCard(job, chatId);
         currentJobView.set(chatId, newIndex);
@@ -1872,7 +1877,8 @@ bot.on('callback_query', async (query) => {
         });
         
         bot.answerCallbackQuery(query.id);
-    });
+        return;
+    }
 
     // Job details
     if (data.startsWith('details_')) {
