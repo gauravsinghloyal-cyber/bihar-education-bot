@@ -936,6 +936,30 @@ bot.onText(/\/testlinks/, async (msg) => {
     }
 });
 
+// GET MY ID COMMAND
+bot.onText(/\/myid/, (msg) => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+    const isUserAdmin = isAdmin(userId);
+    
+    let statusEmoji = isUserAdmin ? '🔐' : '👤';
+    let statusText = isUserAdmin ? 'Admin ✅' : 'Regular User';
+    
+    bot.sendMessage(chatId, `
+🆔 *Your Telegram Information*
+
+👤 *User ID:* \`${userId}\`
+💬 *Chat ID:* \`${chatId}\`
+📱 *Username:* @${msg.from.username || 'Not set'}
+✏️ *Name:* ${msg.from.first_name} ${msg.from.last_name || ''}
+
+${statusEmoji} *Status:* ${statusText}
+
+${!isUserAdmin ? '💡 *Want admin access?*\nSend your User ID to the bot administrator.' : '✅ You have full admin access to all bot features!'}
+`, {parse_mode: 'Markdown'});
+});
+
+
 // JOBS COMMAND
 bot.onText(/\/jobs/, async (msg) => {
     const chatId = msg.chat.id;
