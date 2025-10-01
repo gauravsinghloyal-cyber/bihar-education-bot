@@ -1208,8 +1208,27 @@ bot.on('message', (msg) => {
 
 
 // HELP COMMAND
-bot.onText(/\/help/, (msg) => {
+// ...existing code...
+    
+
+// ===== KEYBOARD BUTTON HANDLERS =====
+bot.on('message', function (msg) {
+    const text = msg.text;
+    /**
+     * Unique identifier for the chat where the message was sent.
+     * @type {number}
+     */
     const chatId = msg.chat.id;
+
+    // Handle feedback state
+    if (userStates.get(chatId) === 'awaiting_feedback') {
+        ADMIN_IDS.forEach(adminId => {
+            // ...existing code...
+        });
+    }
+    // ...existing code...
+// ...existing code...bot.onText(/\/help/, (msg) => {
+    // Remove redeclaration, use existing chatId from function argument
     const helpMsg = `
 ℹ️ *Bihar Education Bot - Help*
 
@@ -1233,34 +1252,7 @@ bot.onText(/\/help/, (msg) => {
 For queries, use /feedback command.
 `;
 
-    bot.sendMessage(chatId, helpMsg, {parse_mode: 'Markdown'});
-});// HELP COMMAND
-bot.onText(/\/help/, (msg) => {
-    const chatId = msg.chat.id;
-    const helpMsg = `
-ℹ️ *Bihar Education Bot - Help*
-
-*Available Commands:*
-/start - 🏠 Start the bot
-/jobs - 💼 View latest jobs
-/universities - 🎓 University list
-/subscribe - 🔔 Subscribe to alerts
-/profile - 👤 View your profile
-/help - ℹ️ Get help
-/about - ℹ️ About the bot
-/feedback - 💬 Send feedback
-
-*Features:*
-• Real-time job notifications
-• Auto-scraping from official sites
-• Save your favorite jobs
-• Get personalized alerts
-
-*Support:*
-For queries, use /feedback command.
-`;
-
-    bot.sendMessage(chatId, helpMsg, {parse_mode: 'Markdown'});
+    bot.sendMessage(helpChatId, helpMsg, {parse_mode: 'Markdown'});
 });
 
 // ===== ADMIN PANEL COMMANDS =====
@@ -1796,8 +1788,9 @@ bot.on('callback_query', async (query) => {
                 });
             });
         }
-        bot.answerCallbackQuery(query.id);
-  
+        }
+        return bot.answerCallbackQuery(query.id);
+
     // ===== QUICK NAVIGATION CALLBACKS =====
     if (data === 'view_latest_jobs') {
         bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
@@ -1854,27 +1847,27 @@ bot.on('callback_query', async (query) => {
     }
 
     // Job navigation
-if (data.startsWith('job_next_') || data.startsWith('job_prev_')) {
-    const currentIndex = currentJobView.get(chatId) || 0;
-    let newIndex = data.startsWith('job_next_') ? currentIndex + 1 : currentIndex - 1;
-    
-    if (newIndex < 0) newIndex = biharJobs.length - 1;
-    if (newIndex >= biharJobs.length) newIndex = 0;
+    if (data.startsWith('job_next_') || data.startsWith('job_prev_')) {
+        const currentIndex = currentJobView.get(chatId) || 0;
+        let newIndex = data.startsWith('job_next_') ? currentIndex + 1 : currentIndex - 1;
+        
+        if (newIndex < 0) newIndex = biharJobs.length - 1;
+        if (newIndex >= biharJobs.length) newIndex = 0;
 
-    const job = biharJobs[newIndex];
-    const jobCard = createJobCard(job, chatId);
-    currentJobView.set(chatId, newIndex);
-    
-    bot.editMessageText(jobCard.message, {
-        chat_id: chatId,
-        message_id: query.message.message_id,
-        reply_markup: jobCard.keyboard,
-        parse_mode: 'Markdown'
-    });
-    
-    bot.answerCallbackQuery(query.id);
-    return;
-}
+        const job = biharJobs[newIndex];
+        const jobCard = createJobCard(job, chatId);
+        currentJobView.set(chatId, newIndex);
+        
+        bot.editMessageText(jobCard.message, {
+            chat_id: chatId,
+            message_id: query.message.message_id,
+            reply_markup: jobCard.keyboard,
+            parse_mode: 'Markdown'
+        });
+        
+        bot.answerCallbackQuery(query.id);
+        return;
+    }
 
     // Job details
     if (data.startsWith('details_')) {
@@ -2090,74 +2083,76 @@ if (data.startsWith('job_next_') || data.startsWith('job_prev_')) {
     }
 
     bot.answerCallbackQuery(query.id);
-});
+}
+
 // ===== KEYBOARD BUTTON HANDLERS =====
 bot.on('message', function (msg) {
-        const text = msg.text;
-        const chatId = msg.chat.id;
+    const text = msg.text;
+    const chatId = msg.chat.id;
 
-        // Handle feedback state
-        if (userStates.get(chatId) === 'awaiting_feedback') {
-            ADMIN_IDS.forEach(adminId => {
-                bot.sendMessage(adminId, `📩 *New Feedback from User ${chatId}:*\n\n${text}`, {
-                    parse_mode: 'Markdown'
-                });
+    // Handle feedback state
+    if (userStates.get(chatId) === 'awaiting_feedback') {
+        ADMIN_IDS.forEach(adminId => {
+            bot.sendMessage(adminId, `📩 *New Feedback from User ${chatId}:*\n\n${text}`, {
+                parse_mode: 'Markdown'
             });
+        });
 
-            bot.sendMessage(chatId, '✅ Thank you for your feedback! We will review it soon.');
-            userStates.delete(chatId);
-            return;
-        }
+        bot.sendMessage(chatId, '✅ Thank you for your feedback! We will review it soon.');
+        userStates.delete(chatId);
+        return;
+    }
 
-        // Skip if command
-        if (!text || text.startsWith('/')) return;
+    // Skip if command
+    if (!text || text.startsWith('/')) return;
 
-        // Handle keyboard buttons
-        if (text === '🏛️ सरकारी नौकरी') {
-            showLatestJobs(chatId);
-        }
+    // Handle keyboard buttons
+    if (text === '🏛️ सरकारी नौकरी') {
+        showLatestJobs(chatId);
+    }
 
-        if (text === '🎓 विश्वविद्यालय') {
-            const univKeyboard = {
-                inline_keyboard: [
-                    [{ text: '🏛️ State Universities', callback_data: 'univ_state' }],
-                    [{ text: '📋 All Universities', callback_data: 'univ_all' }]
-                ]
-            };
-            bot.sendMessage(chatId, '🎓 *Select University Category:*', {
-                parse_mode: 'Markdown',
-                reply_markup: univKeyboard
-            });
-        }
+    if (text === '🎓 विश्वविद्यालय') {
+        const univKeyboard = {
+            inline_keyboard: [
+                [{ text: '🏛️ State Universities', callback_data: 'univ_state' }],
+                [{ text: '📋 All Universities', callback_data: 'univ_all' }]
+            ]
+        };
+        bot.sendMessage(chatId, '🎓 *Select University Category:*', {
+            parse_mode: 'Markdown',
+            reply_markup: univKeyboard
+        });
+    }
 
-        if (text === '📝 परीक्षा अपडेट') {
-            bot.sendMessage(chatId, '📝 *Upcoming Exams & Admit Cards*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
-        }
+    if (text === '📝 परीक्षा अपडेट') {
+        bot.sendMessage(chatId, '📝 *Upcoming Exams & Admit Cards*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
+    }
 
-        if (text === '📊 रिजल्ट') {
-            bot.sendMessage(chatId, '📊 *Latest Results*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
-        }
+    if (text === '📊 रिजल्ट') {
+        bot.sendMessage(chatId, '📊 *Latest Results*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
+    }
 
-        if (text === '📚 स्टडी मेटेरियल') {
-            bot.sendMessage(chatId, '📚 *Study Materials*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
-        }
+    if (text === '📚 स्टडी मेटेरियल') {
+        bot.sendMessage(chatId, '📚 *Study Materials*\n\nFeature coming soon!', { parse_mode: 'Markdown' });
+    }
 
-        if (text === '👤 प्रोफाइल') {
-            const profile = userProfiles.get(chatId) || { savedJobs: [] };
-            const subscription = subscribers.has(chatId) ? '✅ Active' : '❌ Inactive';
+    if (text === '👤 प्रोफाइल') {
+        const profile = userProfiles.get(chatId) || { savedJobs: [] };
+        const subscription = subscribers.has(chatId) ? '✅ Active' : '❌ Inactive';
 
-            const profileMsg = `👤 *Your Profile*\n\n🆔 User ID: ${chatId}\n💾 Saved Jobs: ${profile.savedJobs.length}\n🔔 Subscription: ${subscription}`;
-            bot.sendMessage(chatId, profileMsg, { parse_mode: 'Markdown' });
-        }
+        const profileMsg = `👤 *Your Profile*\n\n🆔 User ID: ${chatId}\n💾 Saved Jobs: ${profile.savedJobs.length}\n🔔 Subscription: ${subscription}`;
+        bot.sendMessage(chatId, profileMsg, { parse_mode: 'Markdown' });
+    }
 
-        if (text === '🔔 Subscribe') {
-            bot.sendMessage(chatId, 'Use /subscribe command to enable alerts!');
-        }
+    if (text === '🔔 Subscribe') {
+        bot.sendMessage(chatId, 'Use /subscribe command to enable alerts!');
+    }
 
-        if (text === 'ℹ️ मदद') {
-            bot.sendMessage(chatId, 'Use /help command for assistance!');
-        }
-    });
+    if (text === 'ℹ️ मदद') {
+        bot.sendMessage(chatId, 'Use /help command for assistance!');
+    }
+});
+
 
 // ===== EXPRESS SERVER =====
 app.get('/', (req, res) => {
@@ -2211,11 +2206,13 @@ bot.on('polling_error', (error) => {
 });
 
 console.log('🚀 Bihar Education Bot v6.0 initialized!');
-console.log(`🔑 Admin IDs: ${ADMIN_IDS.join(', ') || 'None configured'}`);
-console.log(`📢 Channel: ${CHANNEL_ID}`);
+console.log(`🔧 Admin IDs: ${ADMIN_IDS.join(', ') || 'None configured'}`);
+console.log(`📺 Channel: ${CHANNEL_ID}`);
+
 function showJobEditMenu(chatId, job) {
-    bot.sendMessage(chatId, `✏️ *Edit Job*\n\n📋 ${job.title}\n🏢 ${job.organization}\n👥 ${job.posts}\n📅 ${job.lastDate}\n\nEdit feature coming soon!`, {
+    bot.sendMessage(chatId, `📝 *Edit Job*\n\n📄 ${job.title}\n🏢 ${job.organization}`, {
         parse_mode: 'Markdown',
-        reply_markup: {inline_keyboard: [[{text: '⬅️ Back', callback_data: 'admin_viewjobs'}]]}
+        reply_markup: {inline_keyboard: [[{text: '◀️ Back', callback_data: 'admin_viewjobs'}]]}
     });
 }
+});
