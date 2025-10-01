@@ -340,7 +340,7 @@ async function scrapeWebsite(site) {
         console.log(`🔍 Scraping ${site.name}...`);
         
         const response = await axios.get(site.url, {
-            timeout: 15000,
+            timeout: 30000,
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
@@ -659,7 +659,7 @@ async function scrapeFreeJobAlert() {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             },
-            timeout: 10000
+            timeout: 30000
         });
         
         const $ = cheerio.load(response.data);
@@ -1142,7 +1142,7 @@ bot.onText(/\/testlinks/, async (msg) => {
     
     for (const site of sites) {
         try {
-            const response = await axios.get(site.url, {timeout: 10000});
+            const response = await axios.get(site.url, {timeout: 30000});
             bot.sendMessage(chatId, `✅ ${site.name}\nStatus: ${response.status}`);
         } catch (error) {
             bot.sendMessage(chatId, `❌ ${site.name}\nError: ${error.message}`);
@@ -1411,7 +1411,7 @@ bot.onText(/\/testlinks/, async (msg) => {
     
     for (const site of testSites) {
         try {
-            const response = await axios.get(site.url, { timeout: 10000 });
+            const response = await axios.get(site.url, { timeout: 30000 });
             const status = response.status === 200 ? '✅' : '❌';
             bot.sendMessage(chatId, `${status} ${site.name}\nStatus: ${response.status}\nURL: ${site.url}`);
         } catch (error) {
