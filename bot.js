@@ -254,6 +254,112 @@ function getJobById(jobId) {
 }
 
 // ===== HELPER FUNCTIONS =====
+
+// ====== DETAILED JOB VIEW FUNCTION ======
+function formatJobDetails(job) {
+    const msg = `
+╔═══════════════════════════╗
+║      📋 JOB DETAILS      ║
+╚═══════════════════════════╝
+
+*${job.title}*
+
+┌─ 📊 OVERVIEW ────────────────┐
+│ 🏢 *Organisation:* ${job.organization}
+│ 📂 *Category:* ${job.category}
+│ 📊 *Total Posts:* ${job.posts}
+│ 📅 *Last Date:* ${job.lastDate}
+│ 💼 *Job Type:* ${job.jobType || 'Permanent'}
+│ 📍 *Location:* ${job.location || 'Bihar'}
+└──────────────────────────────┘
+
+${job.postBreakdown ? `┌─ 👥 POST BREAKDOWN ─────────┐
+${job.postBreakdown}
+└──────────────────────────────┘
+
+` : ''}┌─ 📅 IMPORTANT DATES ─────────┐
+│ 📢 Notification: ${job.notificationDate || 'Released'}
+│ ✍️ Apply Starts: ${job.applyStartDate || 'Check Website'}
+│ ⏰ Last Date: ${job.lastDate}
+│ 📝 Exam Date: ${job.examDate || 'To be notified'}
+└──────────────────────────────┘
+
+┌─ 📝 SELECTION PROCESS ───────┐
+${job.selectionProcess || '│ • Written Exam\n│ • Document Verification'}
+└──────────────────────────────┘
+
+┌─ ✅ ELIGIBILITY ─────────────┐
+│ 🎓 Qualification: ${job.qualification || '12वीं / Graduate'}
+│ 📅 Age Limit: ${job.ageLimit || '18-37 years'}
+│ 💰 Salary: ${job.salary || 'As per Govt. norms'}
+└──────────────────────────────┘
+
+🌐 *Official Website:* ${job.applyLink}
+
+⚠️ *Note:* कृपया official website visit करें।
+`;
+    return msg;
+}
+
+// ====== INLINE KEYBOARD ======
+function getJobDetailsKeyboard(job) {
+    const keyboard = { inline_keyboard: [] };
+    
+    // Row 1: PDF & Syllabus
+    const row1 = [];
+    if (job.notificationLink) {
+        row1.push({ text: '📄 Notification PDF', url: job.notificationLink });
+    }
+    if (job.syllabusLink) {
+        row1.push({ text: '📚 Syllabus', url: job.syllabusLink });
+    }
+    if (row1.length > 0) keyboard.inline_keyboard.push(row1);
+    
+    // Row 2: Apply Online
+    if (job.applyLink) {
+        keyboard.inline_keyboard.push([
+            { text: '🖊️ Apply Online', url: job.applyLink }
+        ]);
+    }
+    
+    // Row 3: Previous/Next
+    keyboard.inline_keyboard.push([
+        { text: '⬅️ Previous', callback_data: `job_prev_${job.id}` },
+        { text: 'Next ➡️', callback_data: `job_next_${job.id}` }
+    ]);
+    
+    // Row 4: Save/Share
+    keyboard.inline_keyboard.push([
+        { text: '💾 Save', callback_data: `save_${job.id}` },
+        { text: '📤 Share', callback_data: `share_${job.id}` }
+    ]);
+    
+    // Row 5: Back
+    keyboard.inline_keyboard.push([
+        { text: '📋 Back to List', callback_data: 'back_to_jobs' }
+    ]);
+    
+    return keyboard;
+}
+
+// ====== SHOW JOB DETAILS ======
+function showJobDetails(chatId, jobId) {
+    const job = biharJobs.find(j => j.id === jobId);
+    if (!job) {
+        bot.sendMessage(chatId, '❌ Job not found!');
+        return;
+    }
+    
+    const detailedMsg = formatJobDetails(job);
+    const keyboard = getJobDetailsKeyboard(job);
+    
+    bot.sendMessage(chatId, detailedMsg, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard,
+        disable_web_page_preview: true
+    });
+}
+
 function isAdmin(userId) {
     return ADMIN_IDS.includes(userId.toString());
 }
@@ -565,6 +671,8 @@ async function showLatestJobs(chatId) {
         });
         
         jobButtons.push([{text: '🔄 Refresh', callback_data: 'refresh_jobs'}]);
+                jobButtons.push([{text: '🏠 Main Menu', callback_data: 'main_menu'}]);
+
         
         const keyboard = {inline_keyboard: jobButtons};
         
@@ -1538,6 +1646,80 @@ bot.on('callback_query', async (query) => {
         return bot.answerCallbackQuery(query.id);
 
     // ===== QUICK NAVIGATION CALLBACKS =====
+    
+    // ====== JOB DETAIL VIEW HANDLERS ======
+    
+    // Handle job detail view
+    if (data.startsWith('view_job_')) {
+        const jobId = data.replace('view_job_', '');
+        showJobDetails(chatId, jobId);
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // Handle Previous/Next navigation
+    if (data.startsWith('job_prev_') || data.startsWith('job_next_')) {
+        const currentJobId = data.split('_')[2];
+        const currentIndex = biharJobs.findIndex(j => j.id === currentJobId);
+        
+        let newIndex;
+        if (data.startsWith('job_prev_')) {
+            newIndex = currentIndex > 0 ? currentIndex - 1 : biharJobs.length - 1;
+        } else {
+            newIndex = currentIndex < biharJobs.length - 1 ? currentIndex + 1 : 0;
+        }
+        
+        const newJob = biharJobs[newIndex];
+        if (newJob) {
+            const detailedMsg = formatJobDetails(newJob);
+            const keyboard = getJobDetailsKeyboard(newJob);
+            
+            await bot.editMessageText(detailedMsg, {
+                chat_id: chatId,
+                message_id: query.message.message_id,
+                parse_mode: 'Markdown',
+                reply_markup: keyboard,
+                disable_web_page_preview: true
+            }).catch(() => {});
+        }
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // Handle Save job
+    if (data.startsWith('save_')) {
+        return bot.answerCallbackQuery(query.id, {
+            text: '✅ Job saved successfully!',
+            show_alert: true
+        });
+    }
+    
+    // Handle Share job
+    if (data.startsWith('share_')) {
+        const jobId = data.replace('share_', '');
+        const job = biharJobs.find(j => j.id === jobId);
+        
+        if (job) {
+            const shareMsg = `📢 *${job.title}*\n\n` +
+                `🏢 ${job.organization}\n` +
+                `👥 ${job.posts} Posts\n` +
+                `📅 Last Date: ${job.lastDate}\n\n` +
+                `🔗 ${job.applyLink}\n\n` +
+                `🤖 Get more jobs: @BiharEducationBot`;
+            
+            await bot.sendMessage(chatId, shareMsg, { 
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true 
+            });
+        }
+        return bot.answerCallbackQuery(query.id);
+    }
+    
+    // Handle Back to jobs list
+    if (data === 'back_to_jobs') {
+        // Will call existing jobs list function
+        return bot.answerCallbackQuery(query.id);
+    }
+
+
     if (data === 'view_latest_jobs') {
         bot.deleteMessage(chatId, query.message.message_id).catch(() => {});
         showLatestJobs(chatId);
